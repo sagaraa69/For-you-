@@ -137,7 +137,7 @@ body.cine .bar{height:11vh}
 <div class="ctls"><button class="again hide" id="again" type="button">bloom again</button><button class="snd hide" id="snd" type="button" aria-pressed="false">sound off</button></div>
 <button class="cta hide" id="cta" type="button">read my note</button>
 <div class="letter" id="letter" hidden><div class="env" aria-hidden="true"><i class="back"></i><i class="flap"></i><i class="front"></i><i class="seal">♥</i></div><div class="card" role="dialog" aria-modal="true" aria-labelledby="lh">
-<h2 id="lh">Dear Citraa,</h2>
+<h2 id="lh">dear you,</h2>
 <p>i don't say it as often as i should, but you make my days softer and a little brighter.</p>
 <p>thank you for the laughs, the patience, and all the small moments in between. they mean more to me than you know.</p>
 <p>real tulips fade after a while. these ones will stay right here for you.</p>
@@ -744,8 +744,8 @@ const moonC=document.createElement('canvas');moonC.width=moonC.height=160;{const
   m.globalCompositeOperation='destination-over';const g=m.createRadialGradient(72,84,6,80,80,80);
   g.addColorStop(0,'rgba(255,236,220,.32)');g.addColorStop(.45,'rgba(255,210,225,.12)');g.addColorStop(1,'rgba(255,200,220,0)');m.fillStyle=g;m.fillRect(0,0,160,160)}
 let nameStars=null;
-const STAR_TEXT='for you, citraa';
-function buildNameStars(){const lines=W<640?['for you,','citraa']:[STAR_TEXT],bw=W<640?W*0.8:Math.min(W*0.8,980),c=document.createElement('canvas'),x=c.getContext('2d');
+const STAR_TEXT='for you';
+function buildNameStars(){const lines=[STAR_TEXT],bw=W<640?W*0.8:Math.min(W*0.6,700),c=document.createElement('canvas'),x=c.getContext('2d');
   // render the words at the size they will be shown, then sample every ~3px so the strokes stay dense on any screen
   let fsz=200;x.font=`${fsz}px "Great Vibes","Snell Roundhand",cursive`;const widest=Math.max(...lines.map(l=>x.measureText(l).width));fsz=Math.max(36,fsz*bw/Math.max(1,widest));
   const lh2=fsz*1.05;c.width=Math.ceil(bw+fsz*0.6);c.height=Math.ceil(lh2*lines.length+fsz*0.6);x.font=`${fsz}px "Great Vibes","Snell Roundhand",cursive`;x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';
