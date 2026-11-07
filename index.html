@@ -45,8 +45,8 @@ body.cine .bar{height:11vh}
 .gate.gone .gt,.gate.gone .open,.gate.gone .gs,.gate.gone .gm{opacity:0;transform:translateY(10px);transition:opacity .6s ease,transform .8s ease}
 @keyframes beat{0%,40%,100%{transform:scale(1)}8%{transform:scale(1.09)}20%{transform:scale(1.03)}28%{transform:scale(1.07)}}
 .gate .gt{margin:0;font-family:var(--fairy);font-weight:400;font-size:clamp(28px,4.4vw,42px);letter-spacing:.01em;color:#fff4f8;text-shadow:0 0 12px rgba(255,79,139,.7)}
-.open{background:transparent;border:1px solid rgba(255,111,159,.6);color:var(--ink);font:inherit;font-size:12px;letter-spacing:.3em;text-transform:uppercase;
-  padding:13px 26px 13px 30px;border-radius:999px;cursor:pointer;box-shadow:0 0 24px rgba(255,111,159,.25)}
+.open{background:transparent;border:1px solid rgba(255,210,122,.75);color:var(--ink);font:inherit;font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+  padding:13px 26px 13px 30px;border-radius:999px;cursor:pointer;box-shadow:0 0 24px rgba(255,111,159,.25),inset 0 0 0 3px rgba(5,2,4,.9),inset 0 0 0 4px rgba(255,210,122,.3)}
 .open:hover{border-color:var(--rose);box-shadow:0 0 36px rgba(255,111,159,.45)}
 .open:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 .gate .gm{margin:6px 0 0;font-size:11px;letter-spacing:.06em;color:#c99ab0;opacity:.85}
@@ -68,13 +68,14 @@ body.cine .bar{height:11vh}
 @media (max-width:560px){.hint{display:none}}
 .hero{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;pointer-events:none;white-space:nowrap}
 .hero .w{display:inline-block;padding:.1em .35em .25em;font-family:var(--fairy);font-weight:400;font-size:clamp(72px,15vw,196px);line-height:1.15;
-  background:linear-gradient(100deg,#ffc4dc 0%,#ffffff 38%,#ffe2a6 64%,#ff8fbd 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  background:linear-gradient(100deg,#ffc4dc 0%,#ffffff 22%,#ffe2a6 34%,#c9933a 41%,#fff3c4 47%,#ffe2a6 53%,#ffffff 64%,#ff8fbd 100%);background-size:260% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 10px rgba(255,79,139,.85)) drop-shadow(0 0 34px rgba(255,79,139,.45));
   -webkit-mask-image:linear-gradient(90deg,#000 42%,transparent 58%);mask-image:linear-gradient(90deg,#000 42%,transparent 58%);
   -webkit-mask-size:300% 100%;mask-size:300% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-position:100% 0;mask-position:100% 0;opacity:0;
   transition:-webkit-mask-position 2.4s cubic-bezier(.45,.05,.3,1),mask-position 2.4s cubic-bezier(.45,.05,.3,1),opacity .4s ease,transform 1.6s ease}
-.hero.on .w{-webkit-mask-position:0 0;mask-position:0 0;opacity:1}
+.hero.on .w{-webkit-mask-position:0 0;mask-position:0 0;opacity:1;animation:foil 3.2s ease-in-out 1.6s 1 both}
+@keyframes foil{from{background-position:100% 0}to{background-position:0 0}}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse min(46vw,560px) min(15vw,190px) at 50% 50%,rgba(20,0,12,.72),rgba(20,0,12,.35) 55%,transparent 75%);
   opacity:0;transition:opacity 1.2s ease}
 .hero.on::before{opacity:1}
@@ -119,7 +120,7 @@ body.cine .bar{height:11vh}
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(0,0,0,.62);opacity:0;transition:opacity .9s ease}
 .letter.on{opacity:1}
 .card{width:min(440px,100%);max-height:86vh;overflow:auto;box-sizing:border-box;padding:34px 30px 24px;border-radius:6px;cursor:default;
-  background:linear-gradient(160deg,#2c0c1e,#12050c 75%);border:1px solid rgba(255,143,189,.38);box-shadow:0 0 70px rgba(255,79,139,.28),inset 0 0 40px rgba(255,79,139,.06);
+  background:linear-gradient(160deg,#2c0c1e,#12050c 75%);border:1px solid rgba(255,210,122,.6);box-shadow:0 0 70px rgba(255,79,139,.28),inset 0 0 0 5px #160610,inset 0 0 0 6px rgba(255,210,122,.32),inset 0 0 40px rgba(255,79,139,.06);
   transform:translateY(70px) scale(.7);opacity:0;transition:transform 1.3s cubic-bezier(.2,.8,.2,1),opacity .8s ease}
 .letter.reveal .card{transform:none;opacity:1}
 .letter{position:fixed}
@@ -347,7 +348,7 @@ addEventListener('pointercancel',()=>{clearTimeout(holdTimer);pDown=null});
 // ---------- timeline state
 let beatPhase=0,beatPeriod=1.5,beatVis=1,beatVol=1;
 let wordsDustUntil=0,fairyT=0,fairyOn=false,fairyDone=false,dust=[],glints=[],fFlash=0;
-let ts=1,tsT=1,simT=0,dim=0,dimT=0,chroma=0,beams=0,gatherOn=false,gatherAmt=0,seed=null,lastBeat=-1;
+let streak=0,ts=1,tsT=1,simT=0,dim=0,dimT=0,chroma=0,beams=0,gatherOn=false,gatherAmt=0,seed=null,lastBeat=-1;
 let now=0,phase='dark',events=[],shocks=[],bloomBoost=0,flare=0,form=0,artFade=1,beatOn=false,beatT=0,intensity=0;
 const at=(dt,fn)=>events.push({t:now+dt,fn});
 const setSub=s=>{if(!s){$sub.classList.remove('on');return}$sub.classList.remove('on');setTimeout(()=>{$sub.textContent=s;$sub.classList.add('on')},180)};
@@ -411,7 +412,7 @@ function start(fast){
   at(TF-1.5,()=>{whoosh(1.6,.32,180,7000);setSub('')});
   at(TF-0.45,()=>{dimT=0.92;bakeOK=true});
   at(TF-0.5,()=>{shot(W/2,oy+rows*lh*0.5,0.88,0,0.06)});
-  at(TF,()=>{phase='bloom';bloomAt=performance.now();document.body.classList.remove('cine');bloomBoost=1.8;flare=1;
+  at(TF,()=>{phase='bloom';bloomAt=performance.now();streak=1;document.body.classList.remove('cine');bloomBoost=1.8;flare=1;
     dim=dimT=0;ts=tsT=0.16;shake=26;chroma=1;beams=0.01;
     shocks.push({x:heartX,y:heartY,t:now,size:'l'});shocks.push({x:heartX,y:heartY,t:now+0.12,size:'m'});petalBurst(heartX,heartY,110);sparkBurst(heartX,heartY,40,'#ffe2a8');
     boom(.95);hearts.forEach(hh=>hh.boost=1);[587.33,739.99,880,1174.7,1479.98].forEach((f,i)=>bell(f,.15,i*0.07));padOpen();
@@ -464,7 +465,8 @@ let nextGust=6;
 const glow=document.createElement('canvas');glow.width=glow.height=64;{const gx=glow.getContext('2d'),gr=gx.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,236,190,1)');gr.addColorStop(.25,'rgba(255,214,150,.55)');gr.addColorStop(1,'rgba(255,190,120,0)');gx.fillStyle=gr;gx.fillRect(0,0,64,64)}
 const flies=Array.from({length:58},(_,i)=>({i,bx:R(),by:R(),f1:.12+R()*.2,f2:.2+R()*.3,ph:R()*TAU,fb:.6+R()*1.2,s:.6+R()*.8,x:null,y:null}));
-let embers=[],landed=[],skyLook=false;const pair=[[],[]];
+let embers=[],landed=[],skyLook=false;
+const gold=Array.from({length:22},()=>({x:R()*1.2-0.1,y:R(),vy:.018+R()*.025,ph:R()*TAU,rot:R()*TAU,vr:(R()-.5)*1.2,flip:R()*TAU,vf:2+R()*3,s:3+R()*4}));const pair=[[],[]];
 const hearts=Array.from({length:18},()=>newHeart(true));
 function newHeart(any){return{x:R(),y:any?R():1.05,v:.03+R()*.04,ph:R()*TAU,s:.7+R()*1.1,g:R()<.55?'\u2665':'\u2661',col:R()<.6?'#ff6f9f':'#ffb3cc',boost:0}}
 const falls=Array.from({length:26},()=>newFall(true));
@@ -576,6 +578,11 @@ function frame(ms){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(Q===2)drawReflection();
   ctx.save();camApply(ctx);drawShocks(T);ctx.restore();
+  if(streak>0.01){ctx.save();ctx.globalCompositeOperation='lighter';
+    for(const [hh,a,c] of [[90,0.18,'255,111,159'],[26,0.45,'255,210,122'],[4,1,'255,246,235']]){const g=ctx.createLinearGradient(0,0,W,0);
+      g.addColorStop(0,`rgba(${c},0)`);g.addColorStop(.5,`rgba(${c},${a*streak})`);g.addColorStop(1,`rgba(${c},0)`);ctx.fillStyle=g;
+      const h2=hh*(0.6+0.4*streak);ctx.fillRect(0,shy-h2/2,W,h2)}ctx.restore()}
+  streak*=Math.pow(.955,rdt*60);
   if(flare>0.01){const gr=ctx.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*0.75);
     gr.addColorStop(0,`rgba(255,226,238,${flare*0.4})`);gr.addColorStop(.35,`rgba(255,111,159,${flare*0.14})`);gr.addColorStop(1,'rgba(255,111,159,0)');
     ctx.globalCompositeOperation='lighter';ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}
@@ -606,6 +613,11 @@ function drawWorldParticles(T,dt,f60){
     ax.font=`600 ${fs*1.5*pt.s}px "IBM Plex Mono",monospace`;ax.globalAlpha=0.8*Math.min(1,(f-0.15)*2)*artFade;ax.fillStyle=pt.col;ax.fillText(pt.g,0,0);ax.restore()}
   for(const l of landed){ax.save();ax.translate(l.x,l.y);ax.rotate(l.rot);ax.scale(l.sq,1);ax.font=`600 ${fs*1.4*l.s}px "IBM Plex Mono",monospace`;
     ax.globalAlpha=0.75*artFade;ax.fillStyle=l.col;ax.fillText(l.g,0,0);ax.restore()}
+  // gold leaf: thin flakes that flash when they turn to face the light
+  if(f>0.5)for(const g of gold){g.y+=g.vy*f60/60;g.x+=(Math.sin(T*0.5+g.ph)*0.0006+gustAt(T,clamp(g.x,0,1))*0.0008)*f60;g.rot+=g.vr*dt;g.flip+=g.vf*dt;
+    if(g.y>1.05){g.y=-0.05-R()*0.2;g.x=R()*1.2-0.1}
+    const face=Math.abs(Math.cos(g.flip)),x=left+g.x*span,y=top+g.y*height;ax.save();ax.translate(x,y);ax.rotate(g.rot);ax.scale(Math.max(0.08,face),1);
+    ax.globalAlpha=Math.min(1,(f-0.5)*2)*artFade*(0.55+0.45*face);ax.fillStyle=face>0.85?'#fff3c4':face>0.5?'#ffd27a':'#a8792e';ax.fillRect(-g.s/2,-g.s*0.35,g.s,g.s*0.7);ax.restore()}
   // bursts
   bursts=bursts.filter(b=>b.life<b.max);ax.font=`600 ${fs*1.4}px "IBM Plex Mono",monospace`;
   for(const b of bursts){b.life+=dt;b.vx*=Math.pow(.962,f60);b.vy=b.vy*Math.pow(.962,f60)+0.07*f60;b.x+=b.vx*f60;b.y+=b.vy*f60;b.rot+=b.vr*f60*0.1;b.flip+=b.vf*dt;
