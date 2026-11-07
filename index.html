@@ -108,6 +108,8 @@ body.cine .bar{height:11vh}
 @media (prefers-reduced-motion:reduce){.bunny .art{animation:none}}
 .loveword{position:fixed;z-index:7;pointer-events:none;font-family:var(--fairy);font-size:clamp(30px,3.8vw,44px);color:#fff0f6;white-space:nowrap;
   text-shadow:0 0 12px rgba(255,79,139,.9),0 0 30px rgba(255,79,139,.45);animation:lw 2.6s ease-out forwards}
+.loveword.idle{animation:idle 6s ease-in-out forwards;font-size:clamp(34px,4.6vw,54px)}
+@keyframes idle{0%{opacity:0;transform:translate(-50%,-40%);filter:blur(6px)}20%,75%{opacity:1;transform:translate(-50%,-50%);filter:blur(0)}100%{opacity:0;transform:translate(-50%,-62%);filter:blur(4px)}}
 @keyframes lw{0%{opacity:0;transform:translate(-50%,-30%) scale(.8);filter:blur(4px)}15%{opacity:1;filter:blur(0);transform:translate(-50%,-70%) scale(1)}
   100%{opacity:0;transform:translate(-50%,-210%) scale(1.04)}}
 .letter{position:fixed;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:24px 0;
@@ -355,7 +357,7 @@ function start(fast){
   document.body.classList.add('cine');$title.classList.remove('on');$hint.classList.remove('on');
   const WS=0.9,WG=3.7,WE=WS+WORDS.length*WG, L=fast?0.9:WE+2.4, STEP=0.86, TW=L+8*STEP+0.25, TR=TW+2.0, TF=TR+2.9;
   const base=now;
-  bursts=[];landed=[];nameStars=null;skyLook=false;gatherOn=false;beams=0;$hero.classList.remove('on','out');
+  bursts=[];landed=[];nameStars=null;skyLook=false;thoughtStars.length=0;heartDone=0;gatherOn=false;beams=0;$hero.classList.remove('on','out');
   if(!fast){phase='words';seed=null;beatOn=true;beatPhase=0;beatPeriod=1.7;beatVis=.3;beatVol=.75;
     cam.x=camT.x=W/2;cam.y=camT.y=H*0.5;cam.z=camT.z=1.05;cam.r=camT.r=0;shot(W/2,H*0.5,1.12,0,0.004);
     WORDS.forEach((w,i)=>{const t0=WS+i*WG;at(t0,()=>showWords(w,i===WORDS.length-1));at(t0+0.15,()=>bell(WNOTES[i],.07));at(t0+WG-1.25,hideWords)});
@@ -419,7 +421,7 @@ function start(fast){
     at(14.2,()=>{skyLook=false;shot(W/2,oy+rows*lh*0.5,1,0,0.022)});
     at(16.5,()=>$cta.classList.remove('hide'));
     at(18,bunnyIn);
-    at(20,()=>{clearInterval(starTimer);starTimer=setInterval(addThoughtStar,15000);addThoughtStar()});
+    at(20,()=>{clearInterval(starTimer);starTimer=setInterval(addThoughtStar,10000);addThoughtStar()});
     gust(now+0.2,3.2)});
   at(TF+0.6,()=>shot(W/2,oy+rows*lh*0.5,1.0,0,0.02));
   at(TF+0.1,()=>{beatPeriod=1.5;beatVis=1;beatOn=true});
@@ -945,7 +947,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&!$letter.hidden)closeLetter(
 
 // ---------- the bunny
 const $bunny=$('bunny'),$bart=$('bart'),$bubble=$('bubble');
-const BUNNY_LINES=['hi citraa!','i guard this bouquet','you look extra pretty today','boop \u2661','someone really likes you','(psst. it\'s the one who made this)','okay i\'ll stop now... ehe'];
+const BUNNY_LINES=['hi citraa!','i guard this bouquet','you look extra pretty today','boop \u2661','someone really likes you','(psst. it\'s the one who made this)','*mwah* \u2661','okay i\'ll stop now... ehe'];
 let bunnyIdx=0,bubbleTimer=0,blinkTimer=0;
 function bunnyFace(eyes){$bart.innerHTML=` (\\_/)\n(<b>*</b>${eyes}<b>*</b>)\no(")(")`}
 bunnyFace('^.^');
@@ -957,8 +959,8 @@ function bunnyOut(){$bunny.classList.remove('on');$bubble.classList.remove('on')
 $bunny.addEventListener('pointerdown',e=>e.stopPropagation());
 $bunny.addEventListener('pointerup',e=>e.stopPropagation());
 $bunny.addEventListener('click',e=>{e.stopPropagation();$bunny.classList.remove('hop');void $bunny.offsetWidth;$bunny.classList.add('hop');
-  bunnyFace('>.<');setTimeout(()=>bunnyFace('^.^'),500);say(BUNNY_LINES[bunnyIdx]);bunnyIdx=(bunnyIdx+1)%BUNNY_LINES.length;
-  const r=$bunny.getBoundingClientRect();for(let i=0;i<8;i++){const d=mkDust(r.left+r.width/2,r.top+10,1);d.g='\u2665';d.col=R()<.5?'#ff4f8b':'#ffc2da';d.s=11+R()*8;d.vy=-(1.5+R()*2);d.vx=(R()-.5)*3;dust.push(d)}
+  bunnyFace('>.<');setTimeout(()=>bunnyFace('^.^'),500);const line=BUNNY_LINES[bunnyIdx];say(line);bunnyIdx=(bunnyIdx+1)%BUNNY_LINES.length;const kiss=line.startsWith('*mwah');
+  const r=$bunny.getBoundingClientRect();for(let i=0;i<(kiss?22:8);i++){const d=mkDust(r.left+r.width/2,r.top+10,1);d.g='\u2665';d.col=R()<.5?'#ff4f8b':'#ffc2da';d.s=11+R()*8;d.vy=-(1.5+R()*2);d.vx=(R()-.5)*3;dust.push(d)}
   pluck(880,.1);pluck(1318.51,.07,.08)});
 
 // ---------- heart bokeh and thought stars
@@ -973,13 +975,38 @@ function drawBokeh(T){if(form<0.05)return;ctx.save();ctx.globalCompositeOperatio
     const a=(0.05+0.035*Math.sin(T*0.6+b.ph)+intensity*0.04)*form*artFade;ctx.globalAlpha=Math.max(0,a);
     ctx.save();ctx.translate(b.x*W,b.y*H);ctx.rotate(b.rot+Math.sin(T*0.3+b.ph)*0.1);ctx.drawImage(bokehTint(b.col),-b.s/2,-b.s/2,b.s,b.s);ctx.restore()}
   ctx.restore()}
-function addThoughtStar(){if(phase!=='bloom')return;let x,y,k=0;do{x=0.05+R()*0.9;y=0.04+R()*0.3;k++}while(k<20&&Math.hypot(x-0.84,y-0.17)<0.12);
-  thoughtStars.push({x,y,born:performance.now(),ph:R()*TAU});const n=thoughtStars.length;
-  $meta.textContent=`8 tulips · ${n} ${n===1?'star':'stars'}, one for each time i thought of you`;bell(2349.32,.035)}
-function drawThoughtStars(){const now2=performance.now();for(const s of thoughtStars){const age=(now2-s.born)/1000,x=s.x*W,y=s.y*H;
+// each thought becomes a star on the outline of a heart; sixteen of them close it
+const HEART_N=16;let heartDone=0;
+function heartPt(i){const t=i/HEART_N*TAU,hx=16*Math.sin(t)**3,hy=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+  const small=W<640,sc=small?W*0.0072:Math.min(W,H)*0.0085,cx=small?W*0.2:W*0.15,cy=small?H*0.14:H*0.21;return[cx+hx*sc,cy-hy*sc]}
+function addThoughtStar(){if(phase!=='bloom'||thoughtStars.length>=HEART_N)return;
+  thoughtStars.push({born:performance.now(),ph:R()*TAU});const n=thoughtStars.length;
+  $meta.textContent=n<HEART_N?`8 tulips · ${n} ${n===1?'star':'stars'}, one for each time i thought of you`:`8 tulips · ${HEART_N} stars, a whole heart of thoughts about you`;
+  bell(2349.32,.035);
+  if(n===HEART_N){clearInterval(starTimer);heartDone=performance.now();const [cx,cy]=heartPt(HEART_N/2);
+    setTimeout(()=>{[1174.66,1479.98,1760,2349.32].forEach((f,i)=>bell(f,.07,i*0.1));
+      for(let i=0;i<HEART_N;i++){const [x,y]=heartPt(i);for(let k=0;k<3;k++){const d=mkDust(x,y,1);d.vx=(R()-.5)*3;d.vy=(R()-.5)*3;d.col='#fff0f6';dust.push(d)}}
+      if($bunny.classList.contains('on'))say('a whole heart, just for you')},700)}}
+function drawThoughtStars(){const now2=performance.now(),n=thoughtStars.length;if(!n)return;
+  const P=thoughtStars.map((s,i)=>heartPt(i));
+  // threads between consecutive thoughts, and the closing one once the heart is whole
+  ctx.lineWidth=1;ctx.strokeStyle='#ffc2da';
+  for(let i=1;i<n;i++){const k=Math.min(1,(now2-thoughtStars[i].born)/900);ctx.globalAlpha=0.35*k;ctx.beginPath();ctx.moveTo(P[i-1][0],P[i-1][1]);
+    ctx.lineTo(P[i-1][0]+(P[i][0]-P[i-1][0])*k,P[i-1][1]+(P[i][1]-P[i-1][1])*k);ctx.stroke()}
+  if(heartDone){const k=Math.min(1,(now2-heartDone)/900),g=Math.max(0,1-(now2-heartDone)/2500),beat=0.5+0.5*intensity;
+    ctx.globalAlpha=0.35*k+0.3*g;ctx.beginPath();ctx.moveTo(P[n-1][0],P[n-1][1]);ctx.lineTo(P[n-1][0]+(P[0][0]-P[n-1][0])*k,P[n-1][1]+(P[0][1]-P[n-1][1])*k);ctx.stroke();
+    const [cx]=heartPt(0),[,cy]=heartPt(HEART_N/2),[,ty]=heartPt(0),sz=Math.abs(cy-ty)*2.4;ctx.globalAlpha=(0.25+0.25*beat)*k+0.6*g;ctx.drawImage(glow,cx-sz/2,(cy+ty)/2-sz/2,sz,sz)}
+  thoughtStars.forEach((s,i)=>{const age=(now2-s.born)/1000,[x,y]=P[i];
   const pop=Math.max(0,1-age/1.2),tw=0.75+0.25*Math.sin(age*2+s.ph);
   ctx.globalAlpha=tw;ctx.drawImage(glow,x-13-pop*30,y-13-pop*30,26+pop*60,26+pop*60);ctx.globalAlpha=Math.min(1,tw+pop);ctx.fillStyle='#ffffff';ctx.fillRect(x-1.3,y-1.3,2.6,2.6);
-  if(pop>0){ctx.globalAlpha=pop;ctx.strokeStyle='#fff0f6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-22*pop-4,y);ctx.lineTo(x+22*pop+4,y);ctx.moveTo(x,y-22*pop-4);ctx.lineTo(x,y+22*pop+4);ctx.stroke()}}}
+  if(pop>0){ctx.globalAlpha=pop;ctx.strokeStyle='#fff0f6';ctx.beginPath();ctx.moveTo(x-22*pop-4,y);ctx.lineTo(x+22*pop+4,y);ctx.moveTo(x,y-22*pop-4);ctx.lineTo(x,y+22*pop+4);ctx.stroke();ctx.strokeStyle='#ffc2da'}})}
+
+// ---------- "still here? me too"
+let lastAct=performance.now(),idleShown=false;
+for(const ev of ['pointermove','pointerdown','keydown','wheel'])addEventListener(ev,()=>{lastAct=performance.now();idleShown=false},{passive:true});
+setInterval(()=>{if(phase!=='bloom'||idleShown||!$letter.hidden||performance.now()-lastAct<40000)return;idleShown=true;
+  const w=document.createElement('div');w.className='loveword idle';w.setAttribute('aria-hidden','true');w.textContent='still here? me too ♡';
+  w.style.left=(W/2)+'px';w.style.top=(H*0.62)+'px';document.body.appendChild(w);setTimeout(()=>w.remove(),6200);bell(1318.51,.05);bell(1760,.04,.25)},1000);
 
 // ---------- title decode
 function scrambleTitle(){$h1.textContent=FOR}
