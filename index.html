@@ -149,6 +149,12 @@ body.cine .bar{height:11vh}
 .nb span{font-family:var(--fairy);font-size:27px;line-height:1.15}
 .card .ow{margin:0;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#d9a9bf}
 #nt{white-space:pre-line}
+.nb.secret{border-color:rgba(255,210,122,.6);background:linear-gradient(160deg,#4a1a2a,#2a0a1c);box-shadow:0 0 22px rgba(255,210,122,.25);animation:pgin .8s ease}
+.nb.secret i{color:#ffd27a}
+#meter{display:block;width:100%;margin:18px 0 10px;accent-color:#ff4f8b;cursor:pointer}
+#meter:focus-visible{outline:2px solid var(--rose);outline-offset:4px}
+#mtxt{font-family:var(--fairy);font-size:30px;line-height:1.2;color:#fff0f6;min-height:1.3em;text-shadow:0 0 10px rgba(255,79,139,.5);margin:6px 0 16px}
+.card label.ow{display:block}
 .close{display:block;margin:6px auto 0;background:transparent;border:1px solid rgba(255,143,189,.45);color:#ffd0e1;font:inherit;font-size:11px;letter-spacing:.24em;
   text-transform:uppercase;padding:9px 18px 9px 22px;border-radius:999px;cursor:pointer}
 .snd:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
@@ -181,8 +187,17 @@ body.cine .bar{height:11vh}
 <button class="nb" type="button" data-n="0"><i>♡</i><span>you miss me</span></button>
 <button class="nb" type="button" data-n="1"><i>♡</i><span>you can't sleep</span></button>
 <button class="nb" type="button" data-n="2"><i>♡</i><span>you need a smile</span></button>
+<button class="nb secret" type="button" data-n="3" hidden><i>✦</i><span>you've read them all</span></button>
 </div>
+<button class="more" id="meterbtn" type="button">how much do i like you?</button>
 <button class="more goback" type="button" data-to="pmain">back to the letter</button>
+</div>
+<div class="pg" id="pmeter" hidden>
+<h2>how much do i like you?</h2>
+<label class="ow" for="meter">slide to find out</label>
+<input type="range" id="meter" min="0" max="100" value="8">
+<p id="mtxt">go on, slide it.</p>
+<button class="more goback" type="button" data-to="plist">back to the notes</button>
 </div>
 <div class="pg" id="pnote" hidden>
 <p class="ow">open when</p>
@@ -310,7 +325,11 @@ addEventListener('pointerleave',()=>{smx=smy=-1e4;tlean=0});
 let pDown=null,holdTimer=0;
 addEventListener('pointerdown',e=>{if(phase!=='bloom')return;pDown={x:e.clientX,y:e.clientY,t:performance.now(),held:false};
   clearTimeout(holdTimer);holdTimer=setTimeout(()=>{if(pDown){pDown.held=true;launchFireworks()}},600)});
-addEventListener('pointerup',e=>{clearTimeout(holdTimer);if(pDown&&!pDown.held&&phase==='bloom')loveBurst(pDown.x,pDown.y);pDown=null});
+addEventListener('pointerup',e=>{clearTimeout(holdTimer);
+  if(pDown&&!pDown.held&&phase==='bloom'){const ms=Math.min(W,H)*0.2;if(Math.hypot(pDown.x-W*0.84,pDown.y-H*0.17)<ms*0.3)moonLove();else loveBurst(pDown.x,pDown.y)}pDown=null});
+function moonLove(){const x=W*0.84,y=H*0.17;for(let i=0;i<24;i++){const a=R()*TAU,sp=1+R()*3,d=mkDust(x,y,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp;d.col='#fff3e6';dust.push(d)}
+  const w=document.createElement('div');w.className='loveword';w.setAttribute('aria-hidden','true');w.textContent='to the moon & back \u2661';
+  w.style.left=Math.min(x,W-150)+'px';w.style.top=(y+50)+'px';document.body.appendChild(w);setTimeout(()=>w.remove(),2700);bell(1760,.06);bell(2637.02,.04,.1)}
 addEventListener('pointercancel',()=>{clearTimeout(holdTimer);pDown=null});
 
 // ---------- timeline state
@@ -790,7 +809,7 @@ function mkDust(x,y,trail){return{x,y,vx:(R()-.5)*(trail?1.6:0.5),vy:trail?-(0.4
 
 // ---------- night sky
 const skyStars=Array.from({length:90},()=>({x:R(),y:Math.pow(R(),1.4)*0.6,s:R()*1.5+.5,ph:R()*TAU,f:.4+R()*1.6}));
-let shoots=[],nextShoot=3;
+let shoots=[],nextShoot=3,wishes=0;
 const moonC=document.createElement('canvas');moonC.width=moonC.height=160;{const m=moonC.getContext('2d');
   m.fillStyle='#fff3e6';m.beginPath();m.arc(80,80,26,0,TAU);m.fill();m.globalCompositeOperation='destination-out';m.beginPath();m.arc(92,73,23,0,TAU);m.fill();
   m.globalCompositeOperation='destination-over';const g=m.createRadialGradient(72,84,6,80,80,80);
@@ -834,11 +853,13 @@ function updateRockets(rdt){const f=rdt*60;
   rockets=rockets.filter(r=>!r.done)}
 function drawStars(T,rdt){ctx.save();const ms=Math.min(W,H)*0.2;ctx.globalAlpha=0.85;ctx.drawImage(moonC,W*0.84-ms/2,H*0.17-ms/2,ms,ms);ctx.fillStyle='#fff6fa';
   for(const s of skyStars){ctx.globalAlpha=(0.18+0.55*Math.max(0,Math.sin(T*s.f+s.ph)))*(1-form*0.3);ctx.fillRect(s.x*W,s.y*H,s.s,s.s)}
-  if(phase!=='dark'&&T>nextShoot){nextShoot=T+3.5+R()*5;const fl=R()<.5;shoots.push({x:fl?R()*W*.55:W*(.45+R()*.55),y:R()*H*.28,vx:(fl?1:-1)*(10+R()*6),vy:3.5+R()*3,life:0,max:.8+R()*.5})}
-  ctx.globalCompositeOperation='lighter';shoots=shoots.filter(s=>s.life<s.max);
-  for(const s of shoots){s.life+=rdt;s.x+=s.vx*rdt*60;s.y+=s.vy*rdt*60;const a=Math.sin(Math.PI*s.life/s.max),tx=s.x-s.vx*13,ty=s.y-s.vy*13;
+  if(phase!=='dark'&&T>nextShoot){nextShoot=T+3.5+R()*5;const fl=R()<.5;shoots.push({x:fl?R()*W*.55:W*(.45+R()*.55),y:R()*H*.28,vx:(fl?1:-1)*(10+R()*6),vy:3.5+R()*3,life:0,max:.8+R()*.5,wish:phase==='bloom'&&wishes++<3})}
+  ctx.globalCompositeOperation='lighter';shoots=shoots.filter(s=>s.life<s.max+(s.wish?1.6:0));
+  for(const s of shoots){s.life+=rdt;s.x+=s.vx*rdt*60;s.y+=s.vy*rdt*60;const a=Math.max(0,Math.sin(Math.PI*Math.min(1,s.life/s.max))),tx=s.x-s.vx*13,ty=s.y-s.vy*13;
     const g=ctx.createLinearGradient(s.x,s.y,tx,ty);g.addColorStop(0,`rgba(255,244,250,${a})`);g.addColorStop(1,'rgba(255,190,220,0)');
-    ctx.globalAlpha=1;ctx.strokeStyle=g;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.globalAlpha=a;ctx.drawImage(glow,s.x-11,s.y-11,22,22)}
+    ctx.globalAlpha=1;ctx.strokeStyle=g;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.globalAlpha=a;ctx.drawImage(glow,s.x-11,s.y-11,22,22);
+    if(s.wish){if(s.wx===undefined){s.wx=s.x;s.wy=s.y+26}ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=Math.min(1,s.life*3)*Math.max(0,1-(s.life-s.max)/1.6)*0.85;
+      ctx.fillStyle='#ffe3ee';ctx.font=`24px "Great Vibes",cursive`;ctx.textAlign='center';ctx.fillText('make a wish',s.wx,s.wy);ctx.restore()}}
   ctx.globalCompositeOperation='lighter';updateRockets(rdt);
   ctx.restore()}
 
@@ -865,16 +886,26 @@ let letterTimers=[];
 const OPEN_WHEN=[
   ['you miss me',"close your eyes for a second.\nthere's a good chance i'm thinking about you right now too.\n\ntalk soon, okay?"],
   ["you can't sleep","breathe in slowly, and out again.\ncount the stars on this page if you have to.\n\ni hope your dreams are soft tonight. goodnight, citraa."],
-  ['you need a smile',"remember the bunny? it asked me to tell you that you're doing great.\n\nalso: boop. \u2661"]];
+  ['you need a smile',"remember the bunny? it asked me to tell you that you're doing great.\n\nalso: boop. \u2661"],
+  ["you've read them all","that's everything, for now.\n\nthank you for being exactly who you are, citraa.\ni'll be right here. always. \u2661"]];
 const opened=new Set();
-function showPage(id){for(const p of ['pmain','plist','pnote'])$(p).hidden=p!==id;$letter.querySelector('.card').scrollTop=0;
+function showPage(id){for(const p of ['pmain','plist','pnote','pmeter'])$(p).hidden=p!==id;$letter.querySelector('.card').scrollTop=0;
   const f=$(id).querySelector('button');if(f)f.focus({preventScroll:true})}
 $('more').addEventListener('click',()=>{showPage('plist');bell(1318.51,.06)});
+// the "how much" slider never runs out
+const $meter=$('meter'),$mtxt=$('mtxt');let meterMaxed=false;
+$('meterbtn').addEventListener('click',()=>{$meter.value=8;$mtxt.textContent='go on, slide it.';meterMaxed=false;showPage('pmeter');bell(1174.66,.05)});
+$meter.addEventListener('input',()=>{const v=+$meter.value;
+  $mtxt.textContent=v>=100?'way past the end of this bar. \u2661':v>=85?'almost... but more.':v>=65?'getting warmer \u2661':v>=45?'keep going...':v>=25?'nope, still more.':'more than that.';
+  if(v>=100&&!meterMaxed){meterMaxed=true;const r=$meter.getBoundingClientRect();
+    for(let i=0;i<30;i++){const a=R()*TAU,sp=1.5+R()*4,d=mkDust(r.right,r.top,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1;d.g=i%3?'\u2726':'\u2665';d.col=i%2?'#ff8fbd':'#ffd27a';dust.push(d)}
+    [1174.66,1479.98,1760,2349.32].forEach((f,i)=>bell(f,.06,i*0.08))}
+  if(v<100)meterMaxed=false});
 $letter.querySelectorAll('.goback').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.to)));
 $letter.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',()=>{const n=+b.dataset.n;
   $('nh').textContent=OPEN_WHEN[n][0];$('nt').textContent=OPEN_WHEN[n][1];showPage('pnote');
   opened.add(n);b.querySelector('i').textContent='\u2665';[987.77,1318.51].forEach((f,i)=>bell(f,.06,i*0.1));
-  if(opened.size===3&&!opened.done){opened.done=true;setTimeout(()=>{const r=$letter.querySelector('.card').getBoundingClientRect();
+  if(opened.size===3&&!opened.done){opened.done=true;setTimeout(()=>{$letter.querySelector('.nb.secret').hidden=false;const r=$letter.querySelector('.card').getBoundingClientRect();
     for(let i=0;i<40;i++){const a=R()*TAU,sp=1.5+R()*4,d=mkDust(r.left+r.width/2,r.top+40,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1;dust.push(d)}
     [1174.66,1479.98,1760,2349.32].forEach((f,i)=>bell(f,.06,i*0.09));if($bunny.classList.contains('on'))say('you read them all! \u2661')},400)}}));
 function openLetter(){showPage('pmain');try{const tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase();
