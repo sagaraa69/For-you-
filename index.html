@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>for you</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap">
+<style>
+/* Layout: full-bleed cinematic stage; letterbox bars carry captions; title bottom-left after the finale */
+:root{
+  --bg:#000000; --bg-2:#1a0613; --ink:#ffffff; --muted:#e0b8ca; --rose:#ff4f8b; --gold:#ffd27a; --bar:#000000;
+  --fairy:"Great Vibes","Snell Roundhand","Segoe Script",cursive;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--mono);overflow:hidden;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));box-sizing:border-box;
+  -webkit-user-select:none;user-select:none;cursor:crosshair}
+.stage{position:fixed;inset:0;background:radial-gradient(ellipse 65% 60% at 50% 42%,var(--bg-2),var(--bg) 72%)}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.bar{position:fixed;left:0;right:0;height:0;background:var(--bar);z-index:5;transition:height 1.8s cubic-bezier(.7,0,.2,1);overflow:hidden}
+.bar.top{top:0}
+.bar.bot{bottom:0;display:flex;align-items:center;justify-content:center}
+body.cine .bar{height:11vh}
+.sub{font-weight:600;font-size:clamp(10px,1.4vw,12px);letter-spacing:.42em;text-transform:uppercase;color:var(--gold);opacity:0;transition:opacity .6s ease;white-space:nowrap;padding-left:.42em}
+.sub.on{opacity:.9}
+.lead{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:4;pointer-events:none;padding:0 28px}
+.lead p{margin:0;max-width:18em;text-align:center;font-family:var(--fairy);font-weight:400;font-size:clamp(34px,5.6vw,64px);line-height:1.3;letter-spacing:.01em;
+  color:#fff4f8;text-shadow:0 0 10px rgba(255,79,139,.8),0 0 30px rgba(255,79,139,.4),0 0 2px #fff;text-wrap:balance}
+.lead p.last{color:#ffc2da}
+.lead span{display:inline-block;margin-right:.24em;padding:0 .04em;opacity:0;filter:blur(9px);transform:translateY(10px);
+  transition:opacity 1.1s ease,filter 1.3s ease,transform 1.3s cubic-bezier(.2,.8,.2,1)}
+.lead.on span{opacity:1;filter:blur(0);transform:none}
+.lead.out span{opacity:0;filter:blur(8px);transform:translateY(-8px);transition-duration:1.1s}
+.gate{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
+  background:radial-gradient(ellipse 60% 50% at 50% 45%,rgba(60,14,38,.55),rgba(5,2,4,.92) 70%);transition:opacity 1.6s ease;padding:0 24px}
+.gate.gone{opacity:0;pointer-events:none}
+.gate canvas#hc{position:static;inset:auto;width:min(70vw,330px);height:auto;max-width:100%;animation:beat 1.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 10px rgba(255,111,159,.75)) drop-shadow(0 0 30px rgba(255,111,159,.4))}
+@keyframes beat{0%,40%,100%{transform:scale(1)}8%{transform:scale(1.09)}20%{transform:scale(1.03)}28%{transform:scale(1.07)}}
+.gate .gt{margin:0;font-family:var(--fairy);font-weight:400;font-size:clamp(28px,4.4vw,42px);letter-spacing:.01em;color:#fff4f8;text-shadow:0 0 12px rgba(255,79,139,.7)}
+.open{background:transparent;border:1px solid rgba(255,111,159,.6);color:var(--ink);font:inherit;font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+  padding:13px 26px 13px 30px;border-radius:999px;cursor:pointer;box-shadow:0 0 24px rgba(255,111,159,.25)}
+.open:hover{border-color:var(--rose);box-shadow:0 0 36px rgba(255,111,159,.45)}
+.open:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.gate .gs{margin:0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.snd.hide{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.gate canvas#hc{animation:none}}
+.title{position:fixed;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;
+  pointer-events:none;display:flex;flex-direction:column;gap:6px;opacity:0;transform:translateY(10px);transition:opacity 1.6s ease,transform 1.6s ease}
+.title.on{opacity:1;transform:none}
+.title h1{margin:0 0 -4px;font-family:var(--fairy);font-weight:400;font-size:clamp(38px,5.4vw,62px);line-height:1.1;letter-spacing:.01em;color:#fff2f7;
+  text-shadow:0 0 14px rgba(255,79,139,.75),0 0 36px rgba(255,79,139,.35),0 0 2px #fff}
+.title .note{text-transform:none;letter-spacing:.06em;font-family:var(--mono);font-weight:400;font-style:normal;font-size:13px;color:#ffd0e1;opacity:1;text-shadow:none}
+.title p{margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{position:fixed;right:max(20px,env(safe-area-inset-right,0px));top:calc(16px + env(safe-area-inset-top,0px));z-index:6;
+  font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);pointer-events:none;opacity:0;transition:opacity 1.2s ease 1.2s;text-align:right;line-height:1.7}
+.hint.on{opacity:.85}
+.hint b{color:var(--gold);font-weight:400}
+@media (max-width:560px){.hint{display:none}}
+.hero{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:6;pointer-events:none;white-space:nowrap}
+.hero .w{display:inline-block;padding:.1em .35em .25em;font-family:var(--fairy);font-weight:400;font-size:clamp(72px,15vw,196px);line-height:1.15;
+  background:linear-gradient(100deg,#ffc4dc 0%,#ffffff 38%,#ffe2a6 64%,#ff8fbd 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 10px rgba(255,79,139,.85)) drop-shadow(0 0 34px rgba(255,79,139,.45));
+  -webkit-mask-image:linear-gradient(90deg,#000 42%,transparent 58%);mask-image:linear-gradient(90deg,#000 42%,transparent 58%);
+  -webkit-mask-size:300% 100%;mask-size:300% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:100% 0;mask-position:100% 0;opacity:0;
+  transition:-webkit-mask-position 2.4s cubic-bezier(.45,.05,.3,1),mask-position 2.4s cubic-bezier(.45,.05,.3,1),opacity .4s ease,transform 1.6s ease}
+.hero.on .w{-webkit-mask-position:0 0;mask-position:0 0;opacity:1}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse min(46vw,560px) min(15vw,190px) at 50% 50%,rgba(20,0,12,.72),rgba(20,0,12,.35) 55%,transparent 75%);
+  opacity:0;transition:opacity 1.2s ease}
+.hero.on::before{opacity:1}
+.hero.out::before{opacity:0;transition-duration:1.6s}
+.hero .w{position:relative}
+.hero.out .w{opacity:0;transform:translateY(-.12em) scale(.97);transition:opacity 1.4s ease,transform 1.6s ease}
+.ctls{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:8;display:flex;gap:10px;align-items:center}
+.snd,.again,.cta{position:static;
+  background:rgba(11,5,9,.55);border:1px solid rgba(240,196,140,.45);color:var(--gold);font:inherit;font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;padding:9px 14px 9px 16px;border-radius:999px;cursor:pointer;backdrop-filter:blur(4px)}
+.snd:hover,.again:hover{border-color:var(--gold)}
+.again,.cta{transition:opacity 1s ease}
+.again.hide,.cta.hide{opacity:0;pointer-events:none}
+.cta{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:8;color:#ffe3ee;border-color:rgba(255,143,189,.6);
+  box-shadow:0 0 22px rgba(255,79,139,.3);animation:call 2.4s ease-in-out infinite}
+.cta:focus-visible,.again:focus-visible,.close:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+@media (max-width:560px){
+  .ctls{top:calc(12px + env(safe-area-inset-top,0px));bottom:auto;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));justify-content:space-between}
+  .cta{bottom:auto;top:calc(64px + env(safe-area-inset-top,0px))}}
+.loveword{position:fixed;z-index:7;pointer-events:none;font-family:var(--fairy);font-size:clamp(30px,3.8vw,44px);color:#fff0f6;white-space:nowrap;
+  text-shadow:0 0 12px rgba(255,79,139,.9),0 0 30px rgba(255,79,139,.45);animation:lw 2.6s ease-out forwards}
+@keyframes lw{0%{opacity:0;transform:translate(-50%,-30%) scale(.8);filter:blur(4px)}15%{opacity:1;filter:blur(0);transform:translate(-50%,-70%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-210%) scale(1.04)}}
+.letter{position:fixed;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:24px 0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(0,0,0,.62);opacity:0;transition:opacity .9s ease}
+.letter.on{opacity:1}
+.card{width:min(440px,100%);max-height:86vh;overflow:auto;box-sizing:border-box;padding:34px 30px 24px;border-radius:6px;cursor:default;
+  background:linear-gradient(160deg,#2c0c1e,#12050c 75%);border:1px solid rgba(255,143,189,.38);box-shadow:0 0 70px rgba(255,79,139,.28),inset 0 0 40px rgba(255,79,139,.06);
+  transform:translateY(70px) scale(.7);opacity:0;transition:transform 1.3s cubic-bezier(.2,.8,.2,1),opacity .8s ease}
+.letter.reveal .card{transform:none;opacity:1}
+.letter{position:fixed}
+.env{position:absolute;left:50%;top:50%;width:min(340px,78vw);aspect-ratio:1.55;transform:translate(-50%,-40%) scale(.8);opacity:0;perspective:900px;
+  transition:transform 1s cubic-bezier(.2,.8,.2,1),opacity .7s ease;pointer-events:none}
+.letter.on .env{transform:translate(-50%,-50%) scale(1);opacity:1}
+.letter.reveal .env{transform:translate(-50%,10%) scale(.92);opacity:0;transition-duration:1.2s}
+.env i{position:absolute;inset:0;border-radius:6px;display:block}
+.env .back{background:#3b0f24;border:1px solid rgba(255,143,189,.4);box-shadow:0 0 60px rgba(255,79,139,.3)}
+.env .front{background:linear-gradient(170deg,#561a3a,#2d0a1c);clip-path:polygon(0 0,50% 56%,100% 0,100% 100%,0 100%);z-index:3}
+.env .flap{bottom:auto;height:60%;background:linear-gradient(#6a2148,#4a1530);clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:50% 0;z-index:4;
+  transition:transform .9s cubic-bezier(.5,0,.3,1)}
+.letter.unseal .env .flap{transform:rotateX(180deg);z-index:1}
+.env .seal{left:50%;top:55%;right:auto;bottom:auto;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;z-index:5;
+  background:radial-gradient(circle at 35% 30%,#ff8fb5,#c2124f 60%,#7d0a32);box-shadow:0 0 18px rgba(255,79,139,.8),inset 0 0 6px rgba(0,0,0,.4);
+  color:#ffe3ee;font-style:normal;font-size:22px;line-height:52px;text-align:center;transition:transform .5s ease,opacity .5s ease}
+.letter.unseal .env .seal{transform:scale(1.6);opacity:0}
+.card h2{margin:0 0 14px;font-family:var(--fairy);font-weight:400;font-size:clamp(38px,6vw,48px);line-height:1.1;color:#fff0f6;text-shadow:0 0 12px rgba(255,79,139,.65)}
+.card p{margin:0 0 14px;font-size:14px;line-height:1.85;color:#ffe3ee;letter-spacing:.02em;max-width:60ch}
+.card .sign{font-family:var(--fairy);font-size:clamp(28px,4.4vw,34px);line-height:1.2;color:#ffc2da;margin:20px 0 10px;text-align:right;letter-spacing:0}
+.card .ps{font-size:12px;line-height:1.7;color:#d9a9bf;letter-spacing:.03em;margin:0 0 14px}
+.close{display:block;margin:6px auto 0;background:transparent;border:1px solid rgba(255,143,189,.45);color:#ffd0e1;font:inherit;font-size:11px;letter-spacing:.24em;
+  text-transform:uppercase;padding:9px 18px 9px 22px;border-radius:999px;cursor:pointer}
+.snd:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+.snd[aria-pressed="false"]{animation:call 2.4s ease-in-out infinite}
+@keyframes call{50%{box-shadow:0 0 0 6px rgba(240,196,140,.12),0 0 24px rgba(255,111,159,.35)}}
+@media (prefers-reduced-motion:reduce){.snd{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="stage"><canvas id="c" role="img" aria-label="ASCII art of eight pink tulips that bloom one by one, are wrapped in cream paper and tied with a gold ribbon, then sway in the wind under a spotlight with fireflies."></canvas></div>
+<div class="bar top"></div>
+<div class="bar bot"><div class="sub" id="sub"></div></div>
+<div class="lead" id="lead"></div>
+<div class="hero" id="hero" aria-hidden="true"></div>
+<div class="ctls"><button class="again hide" id="again" type="button">bloom again</button><button class="snd hide" id="snd" type="button" aria-pressed="false">sound off</button></div>
+<button class="cta hide" id="cta" type="button">read my note</button>
+<div class="letter" id="letter" hidden><div class="env" aria-hidden="true"><i class="back"></i><i class="flap"></i><i class="front"></i><i class="seal">♥</i></div><div class="card" role="dialog" aria-modal="true" aria-labelledby="lh">
+<h2 id="lh">Dear Citraa,</h2>
+<p>i don't say it as often as i should, but you make my days softer and a little brighter.</p>
+<p>thank you for the laughs, the patience, and all the small moments in between. they mean more to me than you know.</p>
+<p>real tulips fade after a while. these ones will stay right here for you.</p>
+<p class="sign">with love</p>
+<p class="ps" id="ps"></p>
+<button class="close" id="lclose" type="button">close</button>
+</div></div>
+<div class="title" id="title"><h1 id="h1">for you</h1><p class="note">every petal is a reason i love you</p><p id="meta">8 tulips</p></div>
+<div class="gate" id="gate"><canvas id="hc" aria-hidden="true"></canvas><p class="gt">a little something, just for you</p><button class="open" id="open" type="button">tap to open</button><p class="gs">best with sound on</p></div>
+<div class="hint" id="hint">move to <b>stir the wind</b><br>tap to <b>send love</b> · hold for <b>a surprise</b></div>
+<script>
+const D={"cols":140,"rows":109,"t":["                                                                    a%a#@&                                                                  ","                                        %               #         xaaaaa#@@&                                                                ","                                        ##           @@@@@&&&#%#####%a#&###&#%                                                              ","                                       x%@#         @$$&#&##&#%#axaaa#&&&&#%##a                                                             ","                                       x%%@%       @$$$&#@@@&&#xxaaxx&&&&&####%a                                                            ","                                       oax%@%      &&&@@@$@$$@@@#%aaa&&&&&#####%x              aaa%a                                        ","                                        oao#&a     ##&&&$$$$@$@@$@#%aa#&######%%a    %%%##* #&&@&#%%%x                                      ","                             #&#&&      oo*o%%a    #&&#$$$$@&@@@&&@&axa###%%%%%%%x %#&####ax%#&#xaxxaax                                     ","                           %&@&#&&&&&#   *o*aaaa   #&&&@$$$@@@@@@@&&&%oa##%a%a%aaxa###&&##&xaa%%#%xaaaaa  &@&#                              ","                           #&@&###@@@@@& =*oo#xaxo #&&&@@@@@@@@@&&@&##ao%%%a%%aaaa%#&&@@&%@&a#####aaaaaxx%$$#@#                             ","                         %&%#&#####&&@@@@&o**x&ooxo &@&&@@@@@@@@&&&&&##oxaaaaaaaa%%&#&#$&%@&a##%%%aaaaaoaa@#%@#                             ","                   %###%%#@&&&@&###%#&@@@@@/**%&ooo*a@&&@@@@@@@&&&&&&&#%x%aaaaaaa%####%@#%&#%%%%%aaaaaxoxa%&#@%               %a            ","                 %#&#####$$$$$@@@&&&#%#@@&&@/**%&xox*/@&&@&@@@@&&&&&&&&#x%axaxxaa%#%#aa&#%##aa%%aaaaaxxxaa%#%#%             a&#             ","             &&& #@#%##%&$$$$$@@@$@&&&#%#@&&@#**xaaox*/@&&@&@@&&&&&&&&&#oa%%xxxaa##%%aa##%#%%aaaaaaaooaa%%%%aax            a&@a             ","            &$$$@&@%%##%@$$$$$$@@$@@@&&&%%@@#@#*ooxa*o*/@@@@&&&&&&&&&#&#ox#%xoxaa#%%%aaa%%%%%aaaaaaxxaa%%%%%%ax          aa#&a              ","            @@$$$$@@@##%&$$$$$$@@@$@@@&##%%&&#&%+**oa***o&@@@@&&&&&&&&#%x*%%axxxa%%%aaaa%%aaaxxaxxxx%a%%%%##%x         ooa#%o               ","            &$@$$@$$$$@##$$$$$$$@@@$@@&&&&#%&&#&-+o+*%oo*+/@@@&&@&&&##%xo*a%aaxxa%a%aaaa%%aaaaxxxoaaa%%%##%#ao        xxa%x*                ","            %@&&@#@$$$$$&@$$$$$$@@@@@@@&&###%&&##++o\\@#@&%xa&&@&##&@@#a%o*oaaaxxx%aaaaaaaaaaaaxxoxaa%%%##%%ao       xaaxxo+                 ","             %&&#&#@$$$$@&@$@@@@@@@@@@@@&#####&##ax@$&%&&&&#&@@&#%%%&$&&@%**a%axxxaaaaaxaaaaaxxooaa%%%#%%%ax#@@@& oa%%oo**                  ","              a#&&&##@$@@@@$@@@@@@@@@@@@@&######%@$@@a####&@$@%#%aa#%#&&&@#oa%%%xxaaaxxxxaaaaxooaa%%%#%a%ax&$@@@%oa%a*oo*                   ","               a#&&&&#&@@@@@$@@@@@@@@@@@@@&##&###@@$a#@@&@$$@##a%#%aa#&@@&&#a##&aoxxaxxxxaaaxoooaa%%#%%%aa#&##%%axxo+**+                    ","                a%&&&&&&@@@@&@$@@@@@@@@@@@@&#####&@@@$$$$$$@####%a%a%$@@@&&#%%###xxxxxxxxaxx*o*xa%%a%aaaaaaa#&##%oooxxx%aa                  ","    %##%axo       %#&&&&&&@@@&@$$@@@@@@@@@@@#%###&&@$$$$$$$@&##&##a%@@@@@@@&#%%%#%oxxxxxxxo+***aaaxaaaxxxaaa%#%axx%a#&##&#%                 ","      &&&&%aooxxxx a%&&&&&#&@@&&@$$@@@@$@@@&&##&&#&$$$$@$$@$$@####%@$@@@@@&&#%aa%%aoaoo*oxo+**xxooxxaaxxaaaa%%%%&&&@&axaaaa&&&##            ","        %##&#%%###%aaa%#&&&##&@@&&@$$@@@@@@&@@#%&#&$@$@@@@$@@@@#%%#@@@@@@@&&&#xaa%%x%#aaooaxooooxx%&axaaaaaa#&&&&&@@@axaxxo%#@@@#           ","           oxaaaa%%%%aaa%#&&&&#&&##&@@$$@@@&@#**&&#@@@@@@@@@@@@@&a@@$$$@@@@&&#axxaaax#&@-**o&&&&&#$%xxaaxa%#&&&@@@$$$%xxxxxoaa&&&a          ","             **o**oxaaaaxoxa%#&&##&@&#&@&#&%%o+*#&#&@@@&@@@@@@@@@%@$@$@@@@@&@&aoxxaxxx&#ox+-$$@%%&%xaxaxa%####&&&@@@&%##%aax%%&&%           ","               ******oxxxxxxoo*oxa%aa%%##x***xo*x&#&@@@@@@@@@@@@&%#$@@@@@@@&@&%oxoxxxo#%%x*#@%oaooxaxxxa%%###&&#&&@@@@$$@&@#a%%%x %         ","                xxxaaxxxooo%##%x*+++++++o%a*xo*oo%&#&@@@&@@@@@@@&##@$@@@@@@@@&%*xooxooa%#oa%**xx+*axxxa%%%##&&##&&&&&&@&&&&#xa%##&&#a       ","               a%%%#axxxooox###%%xo***oo*+*ooxx*oo#&#&@@@&@@@@@@@##&$@@@@&@@&@aoxo*oo*o%%oo*oooo+oxxxx%%%###%%%####&&&##&&#%xxa@&&&#        ","              a%%%#%xaxxooo*a###%%axo++oxxo*+*a%oox#&#&@@&&&&@@@@###@@@@&&@@@&xxo*+*++xaa%#&&&&&aooxoa%%%%%%%%%###%%%a#####axa##&&#a        ","            xxaaa##axaaaxxxoo%%#&#%axxo+*xxxx**a#xxoa&&&&@&&&&@@@@&#@@&@&@$$@axxo+*x%&@&&@&#%%#@$#oooa%%%%%%%%%%%aaxa%%%%#axaa%a##a         ","         oaaaaa#%%#%aaxxxxxxox#%##%%%axo++xxxaxoa#xxoo&@&&&&&&&@@@@#&@@@@$@#xxxoo%&$$$$$###%%%%%#@&&&@&#a%%%%%aaaaaa%%%%%aaaa%aaa           ","        xa#%x%%%&#%###%%axxo**a#%%#aa%axx++oooxo*a%xx*x%#&@@@@@@@@$$@@@@&%\\*xxoa&@@@$$$@%&&&#%%%a%%%%%@@#aaaaaa%aaa%%%%%aaaaaaaa            ","        a%%a*%#%#@&#%%###%%axo*a#%%%aaaaox+++*****xaoo*oxxoa###&&@&@###\\++=oxoa&&&@@$$$&#&#&&#%#%xa%#%@@%xaxa%%aoa%%%%aaaaaaaa*+*ooxxaaaxx  ","        x%%%%a@#%###&#########aoo%%%%axaxoo=++=+**oaaaooxx*+***o%%**+x%=+*+xxa&&&@&@@$$##&@$$$$@@&a####@&axaa#xoa%a%aaaaaxo*oooxaxxxxo      ","         o%aa%%&#%%%%########%%aaoa%aaaxxoo*==*oxxxxa##%aax*+ox**xxo*ox++++aa&&&@&@@@$#&$$$$$$$$@$&%%%&@$&oa#a*oxxaaaaxoxoxxxa%%            ","          oxxxxa&#%%%%%########%%aooaaxxxaaaaxaaaxxxxa#%%aaxo*oo*+oaxox=++*a#&&@&&@@@@@$$$$$$$$@@@$a%@$$@#x#a**oooxooxxxxxox%&@&%           ","           oxxxxxa%%%%%%%%######%aaxoxaxx%#%%aaax%#######%aaax*oo*+x%o*+++oa&&&&&@@@&@$$$$$$$$$$$$$&#@@@@%a%oooo***oxxooooa&@$@@&%          ","            ooxxxoxaaaa%%%%%%####%a%x*oxa%#xoxxxo&@&&#&###%%%axx**+o%a++++xa&&&&@@@&@$$$@$$$@$@@@@@#%@&&@%aoo**+*oo**ooox%&@@@@&&##         ","              ooxxxxxaaaa%%%%%%%%%%aao**o%axxxxxa&@&&&#####%%%%ao*+*a%*++*ox&&&&@@&@@@$@$$@$$@@@@@@##@&&#axox++oo**oxxxa%&&&&&&&@@#         ","             #@&aoxxxxxxaaaaaaa%%%axxxoax%axxxxx%&&&#&######%%%%ax*+x#x+=x*-@&&&&&@@@@@$@$$$@@@@@@&%&&@&xxox*+*++*oo*oa%%#&&@@$$@@@%        ","            #$$$$&axxxooxxxxxxaaaxaaxox%&&&##axxx&&#####%##%#%aaaao*o%%++a*o&&&&&&@@@@$@$$$@@@@@@@##@@&xxooo=+++oxaa%@@@$$$$$$$@@&%         ","           #$$$$$$$&#aaxoooaaaaaxxaaxxoa%&&####%x%&####%#%%%%#%%aaao*a#**x*o%@@@&@@@@$@$$@@@@@@@@##@@&xxooo*xa#&@$$$$$$$$$$$$@@@&%          ","          #@@$$$@@@@@@&&#%aaaxaaaaao*o+*a%#&#####%%&####%%%%%%%%%xax*x#aoooxo/@$@@@@$$$@@@@@@@@@&&@@#oooooa$$$$$$$$$$$$$$$$@@@&&%           ","          &@@@@&@&#%%%#######%axoxooooo**aa%%%%%%%aa##%%%%%%%%a%%axx*o#%ooxxo*a&$$@@@$@&@@@@@@@&&@&aoooo*\\$$$$$$$$$$$$$$$@@@&&&#            ","           #@$&axxxxxxoo**oooxxxoooxxoo***xa%aa%%%%aa%##%%%%a%%a%%xxoo%&xoxx*o*+/@$$@@&@@@@@@@@&#aooxoxo\\$$$$$$$$$$$$$$$$@@&&@%             ","            %&@$$@&xo*ooxxoooxxa%%aaaaxxoo*oa%%aa%%%%aa%#%%aa%%%a%ox**a&%oox*o*+xxxa#&&@@@&&#%axoxxooxoa$$$$$$$$$$$$$$$$@&&@@%              ","              &@@@$$@#axo*******oxa%#%%%axoooxaaaaaaaaaxx%#%aaaaxxxx**a&%*xooo*a#o+=+ooxo+*oxaaaaxoxxoa$$$$$$$$$$$$$$$$@&&$@%               ","               #@@&@$$$$@&##%xo**+++oxa%%axxooxxaaaaaxaaxoxa%axxxxx***a##ox***a@-+==*x*++x%###%xooxxo%$$$$$$$$$$$$$$$@&&@@&%                ","                #@@&@$$$$$$$$$@&#%ax*+++oxxxxxooxaaaaaxxxxx**xaaao++*ox##oo*+x@#*==+oo*a&&#%axoooxxo%$$$$$$$$$$$$$$@@&@$@#%                 ","                 %@$@&@$$$$$$$$$$$$$@@&#%axxaxoooxxooaaxxxoooxxo*o+++ox%#oo+o@@o+=+*oo%#%xxxo*ooxxo#$@$$$$@$$$$$$$@&&@$#%#                  ","                  %&@@@@$$$$$$$$$$$$$$$$$$$@@&%xxoxxooa%x++**oxoxo++++x%#oo*-$-*=+*+x%axxxo*ooxxoo&$@$$@@@$$$$$@@@&@@&%%#                   ","                   %&@@@&@$$$$$$$$$$$$$$$@@@@@$@%xoxxooa#x++*oooxaa*++oa#x+x@&o++**xaxxooo***oo*o&$@@@&&@$$@@@@&&@@#%#&&                    ","                     &@@@@@$$$$$$$$$$$$$$$$$@@@$$@%x*ooox#%o**oooo%%o+*x%a+%@-*=**xaxoaao****++o&@&&&&&@@&&&&&&&&&&&@$&                     ","                      &@@$@&@$$$@$$$$$$$$$$$$@@$$$$@#x**oxa#x****oo#&*+oaax##o++*oxxo\\$$$@@@&&&$@@@@@$$$@@@@@@@@@@$$$#                      ","                       #@@@@&@$$$@@$$$$$$$$$$@@$$$$$$@#a*+ox%x**++ox#&ooxx%#%*=+*xoo\\$$$$$$$$$$$$$$$$$$$$$$@@@$@$$$@#                       ","                        #@@@$@@@$$@@@$$$$$$$$@@$$$$$$$$$@%oooax**++*x&&ooo%#a++**xo\\$$$$$$$$$$$$$@@@@@@$$$$@@$$$$$@#                        ","                         %@@@$@@@$$@@@$$$$$$@@&@$$$$$$$$$$$&%ooo*o+=*a@#**a%x++**o\\$$$$$$$$$$$@@@@@@@$$$$$@@$$$$$&                          ","                          a&$@@$@@@$$@@@$$$@@@@&$$$$$$$$$$$$$@%x*+*+=*#&a*a%o+**o\\$$$$$$$$$@@@@@@@@$$$$$$@$$$$$@&                           ","                            &$@@$$@@@$@@@@@@@@&@@$$$$$$$$$$$$@$@&/++++x%#xoa**oo@$$$$$$$$@@@@@@@@$$$$$$$@$$$$$@#                            ","                             #$$@$$$$@$$@@@@@@&&$@@$$$$$$$$$$$$@$$&/+=*a%%ox*+a$$$$$$$@&@@@@@@@@$$$$$$$$$$$$@@#                             ","                              %@$@$$$$@@@@@@@@&&@$@@$$$$$$$$$$$$$@$$@/=oa%xo+\\$$$$$$@&&@@@@@@@$$$$$$$$@$@$@@&#                              ","                                &$$@$$$@@@@&&&&#&$$@@$$$$$$$$$$@$$$$$$/+oaa*o$$$$$@&&&@@@@@@@$$$$$$$$@@@$@&&#                               ","                                 #@$$$$@@@@@&&&&#&$$$@@$$$$$$$$$&@$$$$@/+xaa$$$$@&&&@@@@@@@$$$$$$$$@@@@@@&&#                                ","                                   &@@@@@@@@@&&&##&@@$@@$$$$$$$$@&&@$$@&**a$$$@@@&&@@@@@@@$$$$$$$$@@@@@&&&%                                 ","                                    a#@@@@@@@@@&&##&&@$@@$$$$$$$$&&&@$@&%x$$@@@@@@@@@@@@@$$$$$$$@@@@@@&@&                                   ","                                      #&@&&&&@@$$$$@&&&@@@$$$$$$$$&&&@@&&$@@@@@@@@@@@@@$$$$$$$$@@@@@&@@&                                    ","                                        #@$@&#%%%%#&&@@&&@@@$$$$$$@&&&@&@@@$$@@@@@@@@@$$$$$$$@@@@@@@@@#                                     ","                                          &@$@&&#%aaxa&$@&&@@$$$$$$&&&&#@$@$$@@@@@@@@$$$$$$$@@@@@@@@&                                       ","                                            &@$@@&&#%aa%@$@&&&$$$$$$#&&#&$$$$@@@@@@@$$$$$$@&@@@@@@@#                                        ","                                             %#@@&&&##%ax%@$$&&&$$$$@#&#&$$$@@@@@@$$$$$$$&&@@@@@$&%                                         ","                                     #@&#%aaaaa%%#&&&@&&#ax%@$@&&@$$$&###$$$@@@@@$$$$$$@&&@@@@$@#                                           ","                                  %&&$@%xxxaa%%%###&&@$$$@&%a%&@@&&$$$##%$$@&@@@$$$$$@&&@@@&&#%a                                            ","                                 #&@@#*            a%%aa%%#&&#%%%#%%@$@%%@$@@@@$$$$$@&@&&%axaaaaaaaa%#&#                                    ","                                %@@&%                #&&#%aaa%#%%aaxoa$@a&$&@$$$$$@#%aa%%%#&&&&&&####&@$$@#                                 ","                                a#&#%x                a#&@&&#%axxxxxx**%#%%&&@&#%axxx%#&@@@&&#####%%%aa#&$@&%                               ","                                 a%###%%a               %###%aaaxaa%%%#x#@@&%xxooooxxxxxaax             *x#@&%                              ","                                  o%#@@@&&&@&&#%%%aaaxxxoooooxa%#%#%axxooox*o%######%%%%%#&&#             *%&#                              ","                                    x%&&$$$$$$@&&####%%aaaa%#&&#%%axooo*x&x%%*aoaa%#@@$$@@&@&#           **o&#                              ","                                        %#&&&&&#####%aa#&@@@@&&&%aaaoxx*-$&#@/*oo##aa%&$$@@&#%aaax    **oxox#a                              ","                                                    #&@$$$$$$@%a%#%xa%o\\$$$#&&aoao#$@&#%##&&&#%%%axxxoxaaaa%x                               ","                                                  #&@@@$$$$@%a#&&%x#&o\\$$$$&&&&ao%x%$$$$$&#%#####%##%%%%aaa                                 ","                                               %&&@&&&$$$&aa&@@&%o&@xa$$$$$$#&#&%x%aa@$$$$$&#&&&&####%                                      ","                                             %&@@&&&&@$&aa#@$@&%x#$%x$$$$$$$@#&###%#%%@$$$$$$&&@&&#                                         ","                                           a#@$@&&&&@&aa#@$$$@%a%$&a@$$$$$$$$##&#####%%@$$$$$$&@@@@&                                        ","                                         a#&@@@@&@$&% #@@$$@@#aa@@a&$$$$$$$$$@#%&&#&&&#a&$$$$$$&@@$@&%                                      ","                                       x%#&&@@@@$@%* &@@$$$$&%a#@##$$$$$$$$$$$@#%&&#&&@#a&$$$$$$&@$$$@#                                     ","                                     x%#&##&@@$$&o  #@$$$$@@#%#&&%@$$$$$$$$$$$$@%a&@&@@@&%&$$$$$$@@$$$$&                                    ","                                     x%###&@@$@%   #@$$$$$$&%#&###$$$$$$$$$$$$$$#%%#@@@@@&%#$$$$$@@@$$$$&                                   ","                                          #@@#x   #$$$$$$$$&&&&##@@$$$$$$$$$$$$$@%#%%&@&&&&%a@$$$$@@$$$$$@%                                 ","                                           ##    #$$$$$$$$@&&&###@$$$$$$$$$$$$$$$##&#%#&#&&&#%@$$$$@@$$$$$@%                                ","                                                &$$$$$$$$$#%#&#%@@$$$$$$$$$$$$$$$&##&&%%&#####%&$$$@@@$$$$$$%                               ","                                               &$$$$$$$$$@%#####$$$$$$$$$$$$$$$$$$#&&@@%a##%%##%&$$$@@@$$$@#                                ","                                             %@$$$$$$$$$$&####%&$$$$$$$$$$$$$$$$$$#&&@@@%a##%#####@$@@$$&#                                  ","                                            #$$$$$$$$$$$&######@@$$$$$$$$$$$$$$$$$&&&&@@@a #&######&$&&%                                    ","                                           %$$$$$$$$$$@&a&&&#&&$@$$$$$$$$$$$$$$$$$@&&&@@$#  #&&&&#&#&#                                      ","                                            %&@$$$$$$&a #@&&&&@$$$$$$$$$$$$$$$$$$$@&&@@@$@%  a&# %%##%                                      ","                                               %#@$$#   #@@@@&$$$$$$$$$$$$$$$$$$$$$@&@@@$$&                                                 ","                                                        #$@@@&$$$$$$$$$$$$$$$$$$$$$@@@@@$$$%                                                ","                                                        &$$$@@$$$$$$$$$$$$$$$$$$$@$$@@@@$$$&                                                ","                                                       %$$$$$$$$$$$$$$$$$$$$$$$$$@@@@@@$$$$$#                                               ","                                                       &$$$$$$$$$$$$$$$$$$$$$$$$@$@@$@@$$$$$@a                                              ","                                                       #@$$$$$$$$$$$$$$$$$$$$$$$@@@@@$$$$$$$$#                                              ","                                                         %&@$$$$$$$$$$$$$$$$$$$@$$$$$$$$$$$$$$a                                             ","                                                             &@@@@$$$$$$$$$$$$@@@&&&&@@@@@@@@&%                                             ","                                                                  ###&&@@@@@&##                                                             ","                                                                                                                                            ","                                                                                                                                            "],"c":["00000000000000000000000000000000000000000000000000000000000000000000RzRwcr000000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000K000000000000000w000000000TSSSSRwacr0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000FF00000000000daccdqqrwRwxwwwRSwrwwwrwR00000000000000000000000000000000000000000000000000000000000000","000000000000000000000000000000000000000MKoF000000000a77rxxxxrzzwCTSRSxdrqqwzwzR0000000000000000000000000000000000000000000000000000000000000","000000000000000000000000000000000000000MKLmK0000000c777xwccdddxTTSSTTrrrqrxwzwzS000000000000000000000000000000000000000000000000000000000000","000000000000000000000000000000000000000PKMLFK000000qrdab97a77badxRSSSrrrrxxwxzwRS00000000000000CRRAC0000000000000000000000000000000000000000","0000000000000000000000000000000000000000PMPFFK00000xxxqd797799a99cwRSRxrxxzwwwzzS0000yAAyyW0uuqcuyzzyT00000000000000000000000000000000000000","00000000000000000000000000000wxwrq000000PPQNLKM0000wrxw7171aqbabqqcqCTSxwwzzzzzRRS0AyuuuyyCSAxrxVCTTRST0000000000000000000000000000000000000","000000000000000000000000000zrdrxxqqqqw000ZQQLMKM000wrxra779bdddbbdrrrzTRzwzRzRzSRTRyyuqquyqTSRAAyASRRRSC00dcuu000000000000000000000000000000","000000000000000000000000000wqdxwxwdcbadr0_QQQGNMMP0wqrxdbadcddddqqcrwxCTRRRRRRSSSSAyuuccuyaqRyuyyyRSRRSTWz19ucy00000000000000000000000000000","0000000000000000000000000zxzxrxxxxxqqqcacqXZQNoQQNQ0rdrqcdddddddqqqqrwwWTRRSRRSSSAAuuqy9uyadCyyAyARRRRSTCScuycy00000000000000000000000000000","0000000000000000000zwwwzzxcqqqdqxwwzwqdddabIZZLFNQNZHbqrcddddddqqqqrqrxCTHVSSSSSRAyuuuA9uyquAAAAyRRRRRSTVSAuucy000000000000000FK000000000000","00000000000000000zxrzzwww717799abqrrwzxddrqaGZZLFNQNZGarrcdddddqqqqrrqrxVKKVSTTSAAuAuRRuuyuyRSAARSRRSTTTRRAuAyA0000000000000KFF0000000000000","0000000000000dqj0wcwzzzzj01107a999dqrrxzxcqxanZQNLLQNQGarjcqddqqqqqqrrrwOKKKVTTRRyyAyRSyyyuyASRRSSSSTWCRAyAARRS000000000000KFoK0000000000000","000000000000r979brczzwwza000019aa9acdrrxRzddxdnZQNNIQNZGadcdqqqqqqqqrxrwOPFKMWTSRyAAASSRyAAAASSRSSSTWCRAAAAAARV0000000000MKFFK00000000000000","000000000000dc7799aacxwzr011027aba9addrxxzzrqxqv-QQNLZQZXnadddrrrrrrrxwzOQKKKOSSRyAARSRSAARRRSSSSSTSAAyAAAyyyT000000000PPMFLQ000000000000000","000000000000r9d77a9771dxx1111179bba9adqrxxwzxqwrI-Q-ZLXXZ-IjbjrrddqqxxzTXQMKKKVSSARARSSSRRRRRSTTTTSRAyyyyyyyRW00000000NNMLNZ0000000000000000","000000000000zdrrdxa77717qd777799aabbaadqrxxwzrxwx--Xv9xdqvIHqqdqxwqdcwSzOZQMKKJSSARARSSSSRRRRSTTWWRRAAyyyAARW0000000MLLNNQ-00000000000000000","0000000000000zrrxrwb7999ar99aaaaabbbcaadqxwxwwxwwGIc1rzxrxrxxbaqwzzzq9qraGQZKKKVSSRRSSSSSRRRRTTTWRAAAAyyAARSDhhim0PMLLQQQZ000000000000000000","00000000000000Cwqrrwxa9baad9abaababbbcbabrwwxxwwza9acRwwzzq97bzxzSSwzxqqdcvQKKKKTTRRSTSTSRRRRTTWRAAAyyyAARSs5ghiGNLLLZQQZ0000000000000000000","000000000000000Swrqqrxqaccbd9abbcbaabbcbabxwwxwwxba9Cwdbrc70axxSzzRSCzqadrrxMFFFJTSSSTSTTSSRVWWWRRAyyAAARCssxxzRHNNN-ZZ-00000000000000000000","0000000000000000Vzxrrrxrdccdrb9abbbbaaaccadswwwwxqabb710779czxwwzSRSz7bcbqqxvKFFFJTTTTSTSSTVYWWVRAARAARSCCSSyryuCQXOOVVzRS000000000000000000","0000FFFFLMP0000000Rxqrrrxrdddqb99abbbaaabbbjszwwxrqa7717799adxxxxzRRcacbaddryHKKFKOTTSVTTTWYWWYRSSSRSSSTSSSRzwzCVVRRwryyuyz00000000000000000","000000FFFFFMPPMMMM0Vwrqrrxxqddqjb79abbb9abbjlwwxxxx7979c99a99cxwwwzd9aabbcddxzKKKFMOCWWWWTWYYYVVWTTSCVTSSSRSzzzzrqdajSSSCSCrqqxw000000000000","00000000FFFFFLLFFFLLMIExqrrxxrdqqjke9abbbkbjghxvrxr9a9bcca79acbxzzw9ba9cccqqrwIMKKKMHDHCWWHWWWWWVVDsCTSSSSCCwrqqddb9aSTSTTTwxcccx00000000000","00000000000PNLLLLLLLLLLLGvrqqxxrxxxskfffbbjlhvXXrrxccbddcccbabdaxRd9999ddcdqqxHMMKKMPDmiIZZXssllFFgCTSSSSSzyxrrdd9997zTTTTTTSRrruC0000000000","0000000000000ZQQQZQNLLLMNQNIGvrrwwqarslklosGEX-Zvrxdddcqdddccacdazc9a9adccdqdrHPMPKMPItDPM-IgglLLlCTSSSSSzwxxxxrxcacqzwwzSSTRzruz00000000000","000000000000000QQQZYYOIIIMIVOXXXIGvGGGGvsIZZZIPZIrxrcdbdddddddccqzx9a9adcddqdqGPMQMMPPDHKMZDlGPMQXTSSSTSzzwyyrqxrqcca999cqdwSzRRS0z000000000","0000000000000000VVTSRSTTTWWAyyAVY-------XGIXPPZPQGrwqcdcqddddddcqwwb9aaddddddqGZMPPPPPHKFPJHZZMM-YRTTTSzzzwxrrxxuurqqqcqqqqxSSzwwruwC0000000","000000000000000RAyAySTTTWWWVyyuyASOXZZPQZ-ZXPMMZQQvrwqcddqdddcdcbwwx9bbddqdbqcIPPPZPPZPKKPOZQXXQ-WTTTTRzzwxwzzzyyxuuuuyxrruzWTCcqrqx00000000","00000000000000RAAAyzSSSTTTWWCuuuyARSV--PMMPZ-ZKKPNNvqxqccqqqqdddcxwwdbcdqqaaanMMPZ-Z--MMKGvjjqjjGWWTWSzzzzzRzzzwyyAzCCyxxyxCTSwyqduC00000000","000000000000TVCRRuyRSSSSTTTWWzyuuyARSTO-ZPMMMQZMFPNQGqrrdcqqqqdcddxxdcddqb99bMMPP-ZIvnbjqaqwzRwa9xWWWCRzzzzzzzyAzHJMHzzzzyCTSRRRuyC000000000","000000000WSRRCCyAyuyRRSSSTTTWVyAyuAAASTV--MMMMMPMFMNQXndrqqqqqqcccaxjdjfbacvMMMPPGj97177xwwzRzRzxbrjjcqwSRRRARCJKKKCAzzzzRSRRRRRS00000000000","00000000SRywVzAyquyyuuyARSTTWWVyAAyRRARTTY-PPPMPZKKNNZNGnjdbdddjba9eabkjjvXZPMPIjac9227bzxrrwRRRRzzzRzaawSSSVJKKKJRRRzzRRSRRRRRS000000000000","00000000RAACWCuAycquyAyyyyARVWWVuAAyRSRSTT---ZZZZZMKPQZNNNIGvvvnllnkvoDX--_PMPGqqdba771dxrxxqwzwRTSzzRc9zTSJMKKKXRRRzzSSRRRSCJZ-ZQPMMMMMMP00","00000000TRAyACcyAyuuquyuuyyyyySTWzAAASSSSTW_--_-ZYOCCHOXNNZ-ZZZPHEZZ-JH_-Z-PMIqrqdqa977wxqd9771adjSzwzxarCMMKFMQCRRRRSRRSVOXQQQMLMMMMP000000","000000000WRSRAzqyAAAAyuuuuuyyAARSWCARRSSSWTY__YWTTTTRuyARVIZ-PPZZIMPZXJ----KIrrqdrcaa7wx91117219a9qRzzq97nPMFMZOTTSSSCVONNNNNLFL000000000000","0000000000TSTTTCuyAAAAAyuuuuuyyAARWWCRSTCCCCVVRRSTTTTCwzARSVOZPPZ-XKPXI_--ZKvrrdrqaaacb11117717aaa9Cza99avPFLQXWTWVOXNNNNNQNGoitH00000000000","00000000000WTTTTTRAAAAAAAAyuuuuuyRRTWVCTSyyCCRSSSzyyyxyyyzRRSTOPQZ-MKPZ---PLqrdqqbbcq91777777997999rwacbcvMKQQXOXZQNNNNNQQIoh8hitH0000000000","000000000000WWTTTTTRRRRAAAAAyyuuyARRVWWVRAyVWTTTWqcuquuuuyAzRSSVXZ-PKM----MGrrdqdbdra799997999baabawzcqqcGKNQQZ-ZNNQQQNNIHmhhhhloDE000000000","00000000000000WTTTTTTRRRRAAAAAAAAARRRVYYWRSTSTTTRqcqrruuuyyAAzzSTY-ZKKZ--ZPIqqqqbcrb9a9999999bddcdbwxdqdnMPQN--QQZZNNNNIEtllooookkD000000000","0000000000000DhsVTTTTTTSSSRRRRRRRRRSSSVVVzSSTTTTzdururuyyyyyzRRRRTY-MFM-_MZIdqqqqxcaaaa99999cddddcqzrqdjMMQNQ-Z--ZQQZPHEEDolkkffgglH00000000","000000000000Dh555lCTTTTTTTSSSSSSSSRSTTSyuurwwCTTTduuuyuyAyyAyzRSRSTYPKK--KZQjqqdrqabbb99999ddddddbwxddjIMPNQ_---QNIIGlkfe43344fgklE000000000","00000000000Dh558g8gmDCVTTWTSRSSSSSSSTVOVyqquuuxzTzquyuyyyAAAAyARSRSWZKFZZMQQGccbqbbcb9a99addddddbxxdcjIPPQNXIGvnke4322222234efkioE0000000000","0000000000oih855hiihhimmtCCCCVCCCCVOYYZZCAuruyyyyzzruyyyAAAARRAzRSSTYMFMPPQNNva9kbcb999acdddddccrxccvPPNNQGe5544222112233efghlmtE00000000000","0000000000oihiilloDEEEDDDDoDDEJOOOOYOYYYYRRzRAzyAARRwyyAyyAARRRRARTTYPFFPQNNPZGj79bbb9bqdddddddqqanIPPNNZG35e33223333ee8ggghmmmE000000000000","00000000000okfnIMMMMMNNQQQQQNNIXXXOOOOYYYYTRRRRRzzRRSRxyAAAARRARARTTWPKFMQNNZPZ-Gk99bjqdcccccacjvIPPNNNQI3842224433ee58gggimmiE0000000000000","000000000000ElgeekoIXQQNNNNNNNNLLLLLLLIXXYYWSRRRRRARRSSzyARRRRRRRRTTYZKFKQNNZPZ-MMIIvjdccdjnnGINPPPNNNQG48e12232235558f8hmthlE00000000000000","00000000000000ollf45kvGIXQQZZZZZXNLLLLLLLMPPOTSRRRRSRRRTSzxARRSSTTTVZZMFKQNQQQZKFP-_-ZXIX-XPPMKKMMNNNQG8gf221323455588gitmflH000000000000000","000000000000000ohllk5558glnGGINQZ---XILLLLNNNPJSRRRSSSSSTWTCwRSSSTVZZZMFFQNZZZKpK-__ZMZ--MKFFFKMNNNNQG8g8223434445888hmmhftH0000000000000000","0000000000000000Dhkllf8g88888gknnGIIX---QNNNNNNPOCSRSSTSSTWWWWCCCO--ZPMFFNNZ-MpFZ__-PPZMFFFKKMQQNNNNG8g8335g8444588gmmi8lEH00000000000000000","00000000000000000Ekfklk58f8888888888gklvGIIILNNNQNIOVCSTTSWWWWOPZP---PMKFPN-PFFP-_-ZZPKFKMMMPQQNNNNvgg548ghg88888gimmgfDED000000000000000000","000000000000000000Elkkllf8888888ggggggg88gghilGNNNNPQPKKJYYXZPXPPP----MKFPQZF6LZ_-Z-MKKMPMPQQNNNNNngh88hiigg88ghimmihoHED0000000000000000000","0000000000000000000Hokfklk88g8888g88ggggggghii4kGNNNMPPKFM--ZPPPMKMZ--PKKM-MpFP--QZMKMPPPQZZQQNZXlhhhimmig8ghimmmmmtEElo00000000000000000000","000000000000000000000ohkfllf8ggg888ggg8ggggggik58kGNQQPPMFKXZQQQQPKKZ-ZMKM-FFMZ_ZQPMMPLMXZZZZ--Xommmttmiimtttttmmmolk8l000000000000000000000","0000000000000000000000ohkfklg58ggg88gggggggggik1e88kvIQZZMKFMZQZZQPFFZ-PKMPFFP-_ZQMPPG2eefkknnnfgkkkfeeffkkkklikkgf8go0000000000000000000000","00000000000000000000000Dhkfflkf8gggg8ggggggggih013e88gnIQ-PMKMQQ--QMFFPPMMKFKZ_-ZPPPv02332110001110013effefkgggggg8hD00000000000000000000000","000000000000000000000000Dhkkfklg88ghg88gggggghi20024ef88kGXPPMMZQ--ZMFFPPPKFK--ZZPQn02223e2223eeefkkiihfe4fgggggf8iD000000000000000000000000","0000000000000000000000000Elkkffkkf8ghhg8gggghhmf0002333488fnGPPPZQ-_ZKFFZZKKM--ZZPn022103434efghiiiih5443fhggggggm00000000000000000000000000","00000000000000000000000000Hl8kfefkkfghig8ggghimm300002ee238g8kGIZ-Z-_ZFFKZKKP-ZZXk11111213eghiiiiih54333fh8gggggo000000000000000000000000000","0000000000000000000000000000o5kkefgkg8giihhhiimmge0000148e13gg8fnI----MKFMPKZZQXe1101113fiiiiiiiig43332fg8gggghD0000000000000000000000000000","00000000000000000000000000000o8fkfeffkggiiiiimmt8hf000013efe48ggg8nI-_ZMKKPPZ-Ie211113kliiiiiiige32222eggggghiD00000000000000000000000000000","000000000000000000000000000000Ek4ffeffkkgimmimmti8hk20001248fef88g85kI_PKKMP-Xe21124kmmiiiiiiie222212fgggggimD000000000000000000000000000000","00000000000000000000000000000000l3efeeffhhimmmmtt88gie0011234eekf88g85I-PKKZXe322ekmmmiiiiiih4221113ggggghmmE0000000000000000000000000000000","000000000000000000000000000000000Df3e4fhgkgimmtttmgg8if00122344folf8fggX-MMIe33ekmmmliiiiiif211101egggggimtE00000000000000000000000000000000","00000000000000000000000000000000000lfgghiiimmmttttmih8ik10122343kolk88hoXZLe4ekillliiiihih4210001fhhhhimmtE000000000000000000000000000000000","000000000000000000000000000000000000HtihkggghhimtEEtmighi30222333lllk5hmHIe8hiiiiliiiiiig3211104hhhhhmmio00000000000000000000000000000000000","00000000000000000000000000000000000000Etimmolkkf88flmtmihle012222eollkhmoghhhghiliiiiiif222111fiiihimiio000000000000000000000000000000000000","0000000000000000000000000000000000000000tmhmtEEHHEDolkitmiif112221kollimkihgghhiiiihhie222203hiiiimmhlD0000000000000000000000000000000000000","000000000000000000000000000000000000000000oi8hmttHHJJHl8immmi202321lolmtkghgghiiiihhh433321eiiiiiiiho000000000000000000000000000000000000000","00000000000000000000000000000000000000000000oigimmtEEHJEk5hmmme02323DolDo8gggiiiihhg433423kmiiiihglD0000000000000000000000000000000000000000","000000000000000000000000000000000000000000000HDlimmttEHJJEf4gmtl2033fDoEo58ghmiihhg44443fmmiiihkgoH00000000000000000000000000000000000000000","0000000000000000000000000000000000000ollDEHJJJJHEEtmmlloDJOEk5hmtk144lDDD58gimihhf44544itmiiiggiD0000000000000000000000000000000000000000000","0000000000000000000000000000000000Etl8kHJJJJJHEEEDDolf225hmHJElkmto44eDEEf8hmihh85555kmmiiiooDEH00000000000000000000000000000000000000000000","000000000000000000000000000000000EmmmDY000000000000JHHHHHEDmtEHHEDEEk3kEEkgimhh88888itmloEJJJJJHHHHHHDoD000000000000000000000000000000000000","00000000000000000000000000000000HmmtE0000000000000000EttEHJHHEEEHHJOOGekHn8mhg8gg8lDHHHHHEtmtmmttttttth3eiD000000000000000000000000000000000","00000000000000000000000000000000JtttHJ0000000000000000HtmmmtEEJJJJJJOYYGDEDlollDGIOOJHDmiillooDDDEEEEHHDlhimE0000000000000000000000000000000","000000000000000000000000000000000JEttEEHH000000000000000HEEEEHJJJJGGGGDJDkfnHOOXOOOOJJJJJJO0000000000000YJtmmH000000000000000000000000000000","0000000000000000000000000000000000OHtmimmmlknoDEHHHHJJJOOOOOOOHGDDDEHJIOYOOYOHDDEDDEEHHHEttmt0000000000000YEmE000000000000000000000000000000","000000000000000000000000000000000000JEol84225hmmtttEEEHJJJHGootEHHJOOOOYOoJEGYHOJJHtihgekllilE00000000000YYOtE000000000000000000000000000000","0000000000000000000000000000000000000000GvnnnoooDDDDEJHDnkfiimttEJJJOJJYl3oDiGYOOEDJHEle8hitEEHJJJ0000YYOOOOEJ000000000000000000000000000000","0000000000000000000000000000000000000000000000000000Dlk820488lEJHEHOJEYv43fommHOJOD8glDEDoottEEHHJJOOOJJHJJHJ0000000000000000000000000000000","00000000000000000000000000000000000000000000000000omhhh8200kEHEmtHODtOG3821oottHOHJH5333foEEDDDDEEEEEEEEHJH000000000000000000000000000000000","00000000000000000000000000000000000000000000000Eommmmmh44nHHtihmHOohJJ3e810eDmttEOEJHg54213lEttttDvDDE00000000000000000000000000000000000000","000000000000000000000000000000000000000000000Hoimtttti8nHJthghmEJo5EJ814e000lEmEtEEtHHg54111ftmimtE00000000000000000000000000000000000000000","0000000000000000000000000000000000000000000HDihimttmhoHHtigggiEJE5mJi41430003tEmtEtttEHh54010ftihiit0000000000000000000000000000000000000000","00000000000000000000000000000000000000000JEtihhimmglH0tih88ghtHHmhHog31310004iDEltEtttEHl52122emmgghmE00000000000000000000000000000000000000","000000000000000000000000000000000000000JEttmihhi8fDY0ohh55ggmHHtmtEgf2120000e8iEHlmttmmtHl42343fmig8giD0000000000000000000000000000000000000","0000000000000000000000000000000000000JHttttmhh83nO00ohg45gghEHEttEig52110012488iEHohmmihmHo34554fmi888go000000000000000000000000000000000000","0000000000000000000000000000000000000JEEEEmih5fG000Dh84588gmEEtttDg8311100214844tEHDhimmimEDe5885gih8888m00000000000000000000000000000000000","000000000000000000000000000000000000000000DhhoO000og54588ggotmttEih4320001214541kEtEHlmtmmmEHf5855hhg8888iH000000000000000000000000000000000","0000000000000000000000000000000000000000000DD0000o85458588lomtEEDgg43100021154323EtttHomttttEHk5888ihg5885gE00000000000000000000000000000000","000000000000000000000000000000000000000000000000o555585585DEttEElg532100121254320lEtmmHEtEEEEEEl588gih888855E0000000000000000000000000000000","00000000000000000000000000000000000000000000000l445555585kEEEEEDgg432000220354320ftttiiEHtEEEEEEo858ihgg88lo00000000000000000000000000000000","000000000000000000000000000000000000000000000Ek4555555554lEEEEElgg3311112213533202tttmhiHHttEEEEEDk4imghlD0000000000000000000000000000000000","00000000000000000000000000000000000000000000Df4555555554lDttEEDhg83311113214433201mtmmhhmJ0DmtEtttEofooE000000000000000000000000000000000000","0000000000000000000000000000000000000000000E5345555554foJtttttl8g53322123224433101immmihgD00DlmmttttlD00000000000000000000000000000000000000","00000000000000000000000000000000000000000000Hok544544lH0Dmmmtmk8g54322123224443004gmmmihghH00HlD0HEDDH00000000000000000000000000000000000000","00000000000000000000000000000000000000000000000GolffD000Dmimilf8844332233334540018gimiihg8o0000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000Dghhil8885433333434830002gggmiihgg8E000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000l888gg585554433354540010egggiiihgg8l000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000Hg88555885555444488311212ggghgihgg888D00000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000o355555855555555884222224hgghgggg8885hJ0000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000Dk5345888888888584333333ggghhg88885885D0000000000000000000000000000000000000000000000","000000000000000000000000000000000000000000000000000000000Enke445888888883433335hggg88885555558H000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000nkkkf888853322224gilllllllkkgkkllE000000000000000000000000000000000000000000000","000000000000000000000000000000000000000000000000000000000000000000oooonkkfkknoD0000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"],"k":["00000000000000000000000000000000000000000000000000000000000000000000111111000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000002000000000000000100000000011111111110000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000002200000000000111111111111111111111111100000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000022220000000001111111111111111111111111110000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000022222000000011111111111111111111111111111000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000022222200000011111111111111111111111111111100000000000000111110000000000000000000000000000000000000000","00000000000000000000000000000000000000002222220000011111111111111111111111111111100001111110111111111100000000000000000000000000000000000000","00000000000000000000000000000111130000002222222000011111111111111111111111111111110111111111111111111110000000000000000000000000000000000000","00000000000000000000000000011111111113000222222200011111111111111111111111111111111111111111111111111111001111000000000000000000000000000000","00000000000000000000000000011111111111130222222222011111111111111111111111111111111111111111111111111111111111100000000000000000000000000000","00000000000000000000000001111111111111111122222222201111111111111111111111111111111111111111111111111111111111100000000000000000000000000000","00000000000000000001111111111111111111111113222222221111111111111111111111111111111111111111111111111111111111100000000000000022000000000000","00000000000000000111111111111111111111111111122222222111111111111111111112211111111111111111111111111111111111100000000000002220000000000000","00000000000001110111111111111111111111111111112222222211111111111111111112221111111111111111111111111111111111100000000000022220000000000000","00000000000011311111111111111111111111111111111222222221111111111111111112222111111111111111111111111111111111100000000002222200000000000000","00000000000011111111111111111111111111111111111122222222211111111111111112222111111111111111111111111111111111000000000222222000000000000000","00000000000011111111111111111111111111111111111132222222221111111111111112222211111111111111111111111111111111000000002222220000000000000000","00000000000011111111111111111111111111111111111112221111111111111111111132222211111111111111111111111111111110000000222222200000000000000000","00000000000001111111111111111111111111111111111111113111111111111111111113222221111111111111111111111111111111333022222222000000000000000000","00000000000000111111111111111111111111111111111111111111111111111111111111122222111111111111111111111111111113333222222220000000000000000000","00000000000000011111111111111111111111111111111111111111111111111111111111112222311111111111111111111111111111111222222200000000000000000000","00000000000000001111111111111111111111111111111111111111111111111111111111111222211111111111111111111111111111111221111111000000000000000000","00002222222000000011111111111111111111111111111111111111111111111111111111111122221111111111111111111111111111111111111111100000000000000000","00000022222222223301111111111111111111111111311111111111111111111111111111111122222311111111111111111111111111111111111111111111000000000000","00000000222222222222221111111111111111111111331111111111111111111111111111111122222223111131111111131111111111111111111111111111100000000000","00000000000222222222222221111111111111131113332211111111111111111111111111111112222223332223333322311111111111111111111111111111110000000000","00000000000002222222222222221111111113333332322211111111111111111111111111111112222222332222333223111111111111111111111111111111100000000000","00000000000000022221113122211323331111113322222221111111111111111111111111111112222222332223322223111111111111111111111111111111101000000000","00000000000000001111111111111111122222222332222221111111111111111111111111111122222222322233222221111111111111111111111111111111111110000000","00000000000000011111111111111111111122222222222222111111111111111111111111111122222222222232222221111111111111111111111111111111111100000000","00000000000000111111111111111111111111222222222222211111111111111111111111111322222222222313111111111111111111111111111111111111111100000000","00000000000011111111111111111111111111122222222222221111111111111111111111111222222331111111111111111111111111111122111111111111111000000000","00000000011111111111111111111111111111111222222222222211111111111111111111112222211111111111111111111111111111122221111111111111100000000000","00000000111111111111111111111111111111111122222222222222111111111111113111322222111111111111111111111111111112222111111111111111000000000000","00000000111111111111111111111111111111111112222222222222223331113333333322222211111111111111111111111111111122222111111111111112222222222200","00000000111111111111111111111111111111111111222111111111222222223322233222222211111111111111111111111111112222221111111111122222222222000000","00000000011111111111111111111111111111111111111111111111112222222322223222222111111111111111111111111111112222211111111122222222000000000000","00000000001111111111111111111111111111111111111111111111111112222222223222221111111111111111111111111111112222211111222222222333200000000000","00000000000111111111111111111111111111111111111111111111111111122222222222221111111111111111111111111111112222333222222222233333330000000000","00000000000011111111111111111111111111111111111111111111111111112222222222211111111111111111111111111111122222322222222223333333333000000000","00000000000000111111111111111111111111111111111111111111111111111122222222211111111111111111111111111111122222222222222233333333333000000000","00000000000001111111111111111111111111111111111111111111111111111112222222211111111111111111111111111111222222222222223333333333333300000000","00000000000033111111111111111111111111111111111111111111111111111111222222221111111111111111111111111112222222222222233333333333333000000000","00000000000333331111111111111111111111111111111111111111111111111111222222221111111111111111111111111122222233333333333333333333330000000000","00000000003333333333111111111111111111221111111111111111111111111111122222222111111111111111111111111222222333333333333333333333300000000000","00000000003333333333333333333333333331111111111111111111111111111111122222222211111111111111111111122222223333333333333333333333000000000000","00000000000333322222222222222222223333111111111111111111111111111111122222222222211111111111111112222222333333333333333333333330000000000000","00000000000033333332222222222222222222221111111111111111111111111111122222222222222111111111112222222222333333333333333333333300000000000000","00000000000000333333333222222222222222222222111111111111111111111111222222222222222322221122222222222223333333333333333333333000000000000000","00000000000000033333333333322222222222222222221111111111111111111112222222222222222222222222222222222233333333333333333333330000000000000000","00000000000000003333333333333333222222222222222211111111111111111122222222222222222222222222222222222333333333333333333333300000000000000000","00000000000000000333333333333333333333333332222222211111111111322222222222222222222222222222222222223333333333333333333333000000000000000000","00000000000000000033333333333333333333333333332222222222311322222222222222222222222222222222222222333333333333333333333330000000000000000000","00000000000000000002333333333333333333333333333322222222222222222222222222222222222222222222222223333333333333333333333300000000000000000000","00000000000000000000033333333333333333333333333333222222222222222222222222222222222222222222222233333333333333333333333000000000000000000000","00000000000000000000003333333333333333333333333333333222222222222222222222222222222222333333333333333333333333333333330000000000000000000000","00000000000000000000000333333333333333333333333333333332222222222222222222222222222233333333333333333333333333333333300000000000000000000000","00000000000000000000000033333333333333333333333333333333332222222222222222222222222333333333333333333333333333333333000000000000000000000000","00000000000000000000000003333333333333333333333333333333333322222222222222222222223333333333333333333333333333333300000000000000000000000000","00000000000000000000000000233333333333333333333333333333333333222222222222222222233333333333333333333333333333333000000000000000000000000000","00000000000000000000000000003333333333333333333333333333333333333322222222222222333333333333333333333333333333330000000000000000000000000000","00000000000000000000000000000333333333333333333333333333333333333333232222222223333333333333333333333333333333300000000000000000000000000000","00000000000000000000000000000033333333333333333333333333333333333333332222222333333333333333333333333333333333000000000000000000000000000000","00000000000000000000000000000000333333333333333333333333333333333333333222222333333333333333333333333333333330000000000000000000000000000000","00000000000000000000000000000000033333333333333333333333333333333333333222223333333333333333333333333333333300000000000000000000000000000000","00000000000000000000000000000000000333333333333333333333333333333333333322233333333333333333333333333333333000000000000000000000000000000000","00000000000000000000000000000000000044433333334444444433333333333344333442333444444444443333333333333444400000000000000000000000000000000000","00000000000000000000000000000000000000444444333333334443343333333343433443333334444444433333333444344444000000000000000000000000000000000000","00000000000000000000000000000000000000004444444444433344444333333334344434433444444444333333334444443340000000000000000000000000000000000000","00000000000000000000000000000000000000000044344444444433444433333333434433333444443433333333444444334000000000000000000000000000000000000000","00000000000000000000000000000000000000000000443444444444333444333333444433333444444333333334444333340000000000000000000000000000000000000000","00000000000000000000000000000000000000000000044334444444443334433333344443334444343333333444443334400000000000000000000000000000000000000000","00000000000000000000000000000000000003444444444444444334444433344333334443334444333333334444333340000000000000000000000000000000000000000000","00000000000000000000000000000000004443344444444444443333334444334433334443334443333333444444444400000000000000000000000000000000000000000000","00000000000000000000000000000000044444400000000000044444444444444444333443344433333344444444444444444444000000000000000000000000000000000000","00000000000000000000000000000000444440000000000000000444444444444444443343343333333444444444444444444443334000000000000000000000000000000000","00000000000000000000000000000000444444000000000000000044444444444444444344433334444444444333444442244444344440000000000000000000000000000000","00000000000000000000000000000000044444444000000000000000444444444433344443334444444444444440000000000000444444000000000000000000000000000000","00000000000000000000000000000000004444444443334444444444444444443344444444444444444444444444400000000000004444000000000000000000000000000000","00000000000000000000000000000000000044443333344444444444444434444444444443443444444444333333440000000000044444000000000000000000000000000000","00000000000000000000000000000000000000002433334444334444333444444444444433344344444444333444444444000044444444000000000000000000000000000000","00000000000000000000000000000000000000000000000000004433333333444444444333344444444334444444444444444444444440000000000000000000000000000000","00000000000000000000000000000000000000000000000000444443333344444444443333334444444433333444444444444444444000000000000000000000000000000000","00000000000000000000000000000000000000000000000344444433334444444434443333334444444443333334444444422200000000000000000000000000000000000000","00000000000000000000000000000000000000000000044444444433444433444334433333334444444444333333344444400000000000000000000000000000000000000000","00000000000000000000000000000000000000000004444444443344443334444344333333333444444444433333334434440000000000000000000000000000000000000000","00000000000000000000000000000000000000000444444444334044433344444444333333333444444444444333333443344400000000000000000000000000000000000000","00000000000000000000000000000000000000044444443433330443333344444443333333333344444444444433333344333440000000000000000000000000000000000000","00000000000000000000000000000000000004444444433333003433333344444433333333333334443444444443333334433334000000000000000000000000000000000000","00000000000000000000000000000000000004444444433300034333333444444433333333333333444434444444333333433333400000000000000000000000000000000000","00000000000000000000000000000000000000000044444000333333333444444333333333333333344444444444433333343333344000000000000000000000000000000000","00000000000000000000000000000000000000000004400003333333333444444333333333333333344444444444443333344333333400000000000000000000000000000000","00000000000000000000000000000000000000000000000043333333334444443333333333333333334444444444444333334333333340000000000000000000000000000000","00000000000000000000000000000000000000000000000333333333334444443333333333333333334444444444444443334433333400000000000000000000000000000000","00000000000000000000000000000000000000000000033333333333334444443333333333333333334444344444444444333433440000000000000000000000000000000000","00000000000000000000000000000000000000000000333333333333344444433333333333333333334444434404444444433444000000000000000000000000000000000000","00000000000000000000000000000000000000000004333333333333444444433333333333333333334444433400434444444400000000000000000000000000000000000000","00000000000000000000000000000000000000000000433333333330444444333333333333333333333444433440044404444400000000000000000000000000000000000000","00000000000000000000000000000000000000000000000433333000444443333333333333333333333444433340000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000433443333333333333333333333344433334000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000433333333333333333333333333344433334000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000003333333333333333333333333333333333333300000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000003333333333333333333333333333333333333330000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000003333333333333333333333333333333333333330000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000033333333333333333333333333333333333333000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000003333333333333333333333333333333333000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000033333333333330000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"],"p":["#ededd3","#f8e5c8","#fdebc3","#feebc1","#fee9c1","#fee9c1","#fdfec1","#fdc2d2","#fee6c1","#fec1ce","#fec1cd","#fec1c8","#fec1ce","#fec1ca","#f9e5c7","#f8e4c7","#fee5c1","#fee5c1","#fddfb9","#f6c9ce","#f5e2cb","#efd5b3","#f9d19f","#dacaba","#e0c699","#faff2f","#fec1cd","#fec1cd","#efb8a7","#f1bc80","#ffaccf","#cba59e","#ffa0ad","#ffb0be","#ff92bd","#ff839c","#fe78aa","#ff28fe","#ed5e79","#d7b083","#d4a368","#b5e72d","#a2977e","#c88a4e","#7d844b","#be6f27","#8ec400","#69ca2d","#73c100","#349d23","#a2501f","#69c100","#22af12","#ff658e","#fe4874","#ff234f","#ff2727","#d93d59","#e90022","#78853c","#c12900","#3bbf02","#17c100","#606060"],"g":["00000000000000000000000000000000000000000000000000000000000000000000111111000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000100000000011111111110000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000111111111111111111111111100000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000001111111111111111111111111110000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000011111111111111111111111111111000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000011111111111111111111111111111100000000000000222220000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000011111111111111111111111111111100002222220222222222200000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000011111111111111111111111111111110222222222222222222220000000000000000000000000000000000000","00000000000000000000000000000000000000000000000100011111111111111111111111111111112222222222222222222222002222000000000000000000000000000000","00000000000000000000000000000000000000000000000111011111111111111111111111111111122222222222222222222222222222200000000000000000000000000000","00000000000000000000000000000000000000000000000111101111111111111111111111111111122222222222222222222222222222200000000000000000000000000000","00000000000000000000000000000000000000000000000611111111111111111111111111111111222222222222222222222222222222200000000000000044000000000000","00000000000000000000000000000000000000000000000633111111111111111111111111111112222222222222222222222222222222200000000000004440000000000000","00000000000000000000000000000000000000000000000663333111111111111111111111111122222222222222222222222222222222200000000000044440000000000000","00000000000000000000000000000000000000000000000663333331111111111111111111111122222222222222222222222222222222200000000004444400000000000000","00000000000000000000000000000000000000000000000066333333311111111111111111111222222222222222222222222222222222000000000444444000000000000000","00000000000000000000000000000000000000000000000006333333331111111111111111111122222222222222222222222222222222000000004444440000000000000000","00000000000000000000000000000000000000000000000006633333333333333333311101111122222222222222222222222222222220000000444444400000000000000000","00000000000000000000000000000000000000000000000000330333333333333333333330111112222222222222222222222222222222000044444444000000000000000000","00000000000000000000000000000000000000000000000003333333333333333333333333311112222222222222222222222222222220000444444440000000000000000000","00000000000000000000000000000000000000000000000033333333333333333333333333331117022222222222222222222222222224444444444400000000000000000000","00000000000000000000000000000000000000000000000333333333333333333333333333333177722222222222222222222222222444444444444444000000000000000000","00005555555000000000000000000000000000000000003333333333333333333333333333333377772222222222222222222222444444444444444444400000000000000000","00000055555555550000000000000000000000000000033333333333333333333333333333333377777022222222222222222244444444444444444444444444000000000000","00000000555555555555550000000000000000000000003333333333333333333333333333333377777770222202222222204444444444444444444444444444400000000000","00000000000555555555555550000000000000000000006633333333333333333333333333333337777770007220000022044444444444444444444444444444440000000000","00000000000005555555555555550000000000000006066633333333333333333333333333333337777777007772000220444444444444444444444444444444400000000000","00000000000000055555550555555000005500000006666663333333333333333333333333333337777777007770022220444444444444444444444444444444404000000000","00000000000000005555555555555555500000000006666663333333333333333333333333333377777777077700772224444444444444444444444444444444444440000000","00000000000000055555555555555555555500000006666666333333333333333333333333333377777777777707777724444444444444444444444444444444444400000000","00000000000000555555555555555555555555000066666666633333333333333333333333333077777777777070777774444444444444444444444444444444444400000000","00000000000055555555555555555555555555500066666666663333333333333333333333333777777007777777777777744444444444444444444444444444444000000000","00000000055555555555555555555555555555555066666666666633333333333333333333333777777777777777777777774444444444444444444444444444400000000000","00000000555555555555555555555555555555555566666666666666333333333333330333033777777777777777777777777744444444444444444444444444000000000000","00000000555555555555555555555555555555555556666666666666660003330000000033333777777777777777777777777774444444444444444444444444444444444400","00000000555555555555555555555555555555555555666666666666666333330033300333333777777777777777777777777777744444444444444444444444444444000000","00000000055555555555555555555555555555555556666666666666666333333033330333337777777777777777777777777777774444444444444444444444000000000000","00000000005555555555555555555555555555555566666666666666666663333333330333337777777777777777777777777777774444444444444444444000400000000000","00000000000555555555555555555555555555555666666666666666666666633333333333337777777777777777777777777777774444000444444444400000000000000000","00000000000055555555555555555555555555556666666666666666666666663333333333377777777777777777777777777777744444044444444440000000000000000000","00000000000000555555555555555555555555566666666666666666666666666633333333377777777777777777777777777777744444444444444400000000000000000000","00000000000005555555555555555555555555666666666666666666666666666663333333377777777777777777777777777777444444444444440000000000000000000000","00000000000000555555555555555555555556666666666666666666666666666666333333337777777777777777777777777777444444444444400000000000000000000000","00000000000000005555555555555555555566666666666666666666666666666666333333337777777777777777777777777777444400000000000000000000000000000000","00000000000000000000555555555555555566556666666666666666666666666666633333337777777777777777777777777777444000000000000000000000000000000000","00000000000000000000000000000000000006666666666666666666666666666666633333377777777777777777777777777777440000000000000000000000000000000000","00000000000000055555555555555555550000666666666666666666666666666666633333377777777777777777777777777777000000000000000000000000000000000000","00000000000000000005555555555555555555556666666666666666666666666666633333377777777777777777777777777777000000000000000000000000000000000000","00000000000000000000000555555555555555566666666666666666666666666666333333377777777077777777777777777770000000000000000000000000000000000000","00000000000000000000000000055555555555566666666666666666666666666663333333377777777777777777777777777700000000000000000000000000000000000000","00000000000000000000000000000000555555566666666666666666666666666633333333377777777777777777777777777000000000000000000000000000000000000000","00000000000000000000000000000000000000000006666666666666666666066633333333377777777777777777777777770000000000000000000000000000000000000000","00000000000000000000000000000000000000000000006666666666066066666663333333377777777777777777777777000000000000000000000000000000000000000000","00000000000000000005000000000000000000000000000066666666666666666663333333777777777777777777777770000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000666666666666666666333333777777777777777777777700000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000666666666666666333333777777777777000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000006666666666666633333777777777700000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000006666666666633333777777777000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000066666666663333777777770000000000000000000000000000000000000000000000000000000000","00000000000000000000000000500000000000000000000000000000000000666666663333777777700000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000066666333777777000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000606333777770000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000006337777000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000637777000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000637770000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000067700000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007700000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000077700000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"],"seeds":[[30.76171875,17.740885416666664],[64.2578125,9.225260416666666],[94.3359375,15.257161458333332],[62.890625,25.546875],[115.52734375,29.095052083333332],[25.9765625,36.19140625],[54.00390625,43.287760416666664],[90.91796875,39.73958333333333]],"knot":[72.4609375,76.99544270833333]};
+;(function(){
+const $=id=>document.getElementById(id);
+const cv=$('c'),ctx=cv.getContext('2d');
+const art=document.createElement('canvas'),ax=art.getContext('2d');
+const g1=document.createElement('canvas'),g1x=g1.getContext('2d');
+const g2=document.createElement('canvas'),g2x=g2.getContext('2d');
+const tint=document.createElement('canvas'),tnx=tint.getContext('2d');
+const $hero=$('hero'),$snd=$('snd');
+const $sub=$('sub'),$lead=$('lead'),$title=$('title'),$h1=$('h1'),$meta=$('meta'),$hint=$('hint');
+const {cols,rows,t,c,k,p,g:TG,seeds,knot}=D, IDX='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
+const SCR='!<>-_\\/[]{}=+*^?#@%&$01'.split('');
+const ROMAN=['I','II','III','IV','V','VI','VII','VIII'];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const R=Math.random,TAU=Math.PI*2,clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const EASE={
+  out:u=>1-(1-u)**3,
+  inout:u=>u<.5?4*u*u*u:1-(-2*u+2)**3/2,
+  back:u=>{const c1=1.25,c3=c1+1;return 1+c3*(u-1)**3+c1*(u-1)**2}};
+function mixHex(a,b,m){const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);
+  const ch=s=>Math.round(((A>>s)&255)*(1-m)+((B>>s)&255)*m);return '#'+((1<<24)|(ch(16)<<16)|(ch(8)<<8)|ch(0)).toString(16).slice(1)}
+
+// ---------- cells
+// high contrast: push saturation up and lightness away from the middle
+function punch(hex){let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,l=(mx+mn)/2,sat=0;const d=mx-mn;
+  if(d){sat=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?((g-b)/d+(g<b?6:0)):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6}
+  sat=Math.min(1,sat*1.35+0.05);l=Math.min(.9,Math.max(.42,.5+(l-.5)*1.4+.04));
+  const q2=l<.5?l*(1+sat):l+sat-l*sat,p2=2*l-q2,f=t=>{t=(t+1)%1;return t<1/6?p2+(q2-p2)*6*t:t<.5?q2:t<2/3?p2+(q2-p2)*(2/3-t)*6:p2};
+  return'#'+[f(h+1/3),f(h),f(h-1/3)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('')}
+function toHSL(hex){const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0,sat=0;const l=(mx+mn)/2;
+  if(d){sat=l>.5?d/(2-mx-mn):d/(mx+mn);h=(mx===r?((g-b)/d+(g<b?6:0)):mx===g?(b-r)/d+2:(r-g)/d+4)/6}return[h,sat,l]}
+function fromHSL(h,sat,l){const q2=l<.5?l*(1+sat):l+sat-l*sat,p2=2*l-q2,f=t=>{t=(t%1+1)%1;return t<1/6?p2+(q2-p2)*6*t:t<.5?q2:t<2/3?p2+(q2-p2)*(2/3-t)*6:p2};
+  return'#'+[f(h+1/3),f(h),f(h-1/3)].map(v=>Math.round(Math.min(1,Math.max(0,v))*255).toString(16).padStart(2,'0')).join('')}
+const c01=v=>v<0?0:v>1?1:v;
+// colour grade per part of the bouquet: vivid, with deep shadows and bright (not washed-out) highlights
+function grade(hex,kind){let [h,sat,l]=toHSL(hex);
+  if(kind===1){if(h<0.5)h+=1;h=Math.min(1.0,Math.max(0.915,h));sat=Math.min(1,0.78+sat*0.3);l=0.27+Math.pow(c01((l-0.38)/0.52),1.25)*0.48}
+  else if(kind===2){h=Math.min(0.38,Math.max(0.24,h));sat=Math.min(1,0.72+sat*0.35);l=0.22+c01((l-0.18)/0.5)*0.36}
+  else if(kind===3){h=Math.min(0.12,Math.max(0.08,h));sat=Math.min(0.62,sat*1.3+0.18);l=0.46+c01((l-0.45)/0.45)*0.36}
+  else{h=Math.min(0.12,Math.max(0.075,h));sat=0.92;l=0.38+c01((l-0.35)/0.45)*0.3}
+  return fromHSL(h,sat,l)}
+const groups={},cells=[];
+for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const ch=t[y][x];if(ch===' ')continue;
+  const kind=+k[y][x];let col=grade(p[IDX.indexOf(c[y][x])],kind);
+  const q={gx:x,gy:y,ch,g:ch,kind,tid:+TG[y][x],col,px:0,py:0,vx:0,vy:0,mode:0,t0:0,dur:1,sx:0,sy:0,qx:0,qy:0,ez:'out',scr:0,flash:0,sd:R()};
+  const key=col+'|'+kind;(groups[key]||(groups[key]=[])).push(q);cells.push(q);}
+const petals=cells.filter(q=>q.kind===1);
+$meta.textContent=`8 tulips · ${cells.length.toLocaleString('en-US')} characters`;
+const PIV=rows*0.72;
+const bend=gy=>gy<PIV?Math.pow((PIV-gy)/PIV,1.6):0;
+// once the bouquet is whole, cells that move together are baked into one image per unit
+const unitMap=new Map();
+for(const q of cells){const key=q.kind===1?'p'+q.tid:q.kind+'_'+q.gy;let u=unitMap.get(key);
+  if(!u){u={kind:q.kind,tid:q.tid,gy:q.gy,cells:[],x0:1e9,x1:-1e9,y0:1e9,y1:-1e9,sum:0,cv:document.createElement('canvas'),dirty:true,n:0,dx:0,dy:0,w:0,h:0};unitMap.set(key,u)}
+  u.cells.push(q);u.x0=Math.min(u.x0,q.gx);u.x1=Math.max(u.x1,q.gx);u.y0=Math.min(u.y0,q.gy);u.y1=Math.max(u.y1,q.gy);u.sum+=q.gx;q.u=u;q.baked=false}
+const UL=[...unitMap.values()];
+for(const u of UL){u.col=u.kind===1?Math.round(seeds[u.tid][0]):Math.round(u.sum/u.cells.length);u.b=u.kind===1?bend(seeds[u.tid][1]):bend(u.gy)}
+let bakeOK=false;
+const UPAD=4;
+function renderUnit(u){u.dirty=false;let n=0;for(const q of u.cells)if(q.baked)n++;u.n=n;if(!n)return;
+  u.w=(u.x1-u.x0+1)*cw+UPAD*2;u.h=(u.y1-u.y0+1)*lh+UPAD*2;const sc=Math.min(2,dpr)*Math.max(1,cam.z)*1.05;
+  u.cv.width=Math.ceil(u.w*sc);u.cv.height=Math.ceil(u.h*sc);const c2=u.cv.getContext('2d');c2.setTransform(sc,0,0,sc,0,0);
+  c2.font=`700 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;c2.textBaseline='top';
+  for(const q of u.cells)if(q.baked){c2.fillStyle=q.col;c2.fillText(q.ch,(q.gx-u.x0)*cw+UPAD,(q.gy-u.y0)*lh+UPAD)}}
+function unbakeAll(){for(const q of cells)if(q.baked){q.px=ox+q.gx*cw+q.u.dx;q.py=oy+q.gy*lh+q.u.dy;q.vx=q.vy=0;q.baked=false}for(const u of UL)u.dirty=true}
+const leafSpan=seeds.map((s,i)=>{const L=cells.filter(q=>q.kind===2&&q.tid===i);
+  if(!L.length)return{y0:0,y1:1,bx:s[0],by:s[1]};let lo=L[0];for(const q of L)if(q.gy>lo.gy)lo=q;
+  return{y0:Math.min(...L.map(q=>q.gy)),y1:lo.gy,bx:lo.gx,by:lo.gy}});
+const rib=cells.filter(q=>q.kind===4);
+const ribMaxDy=Math.max(1,...rib.map(q=>q.gy-knot[1])),ribMaxDx=Math.max(1,...rib.map(q=>Math.abs(q.gx-knot[0])));
+// per-tulip personality: each head sways on its own clock
+const heads=seeds.map(()=>({a:.45+R()*.55,f:.45+R()*.4,ph:R()*TAU,f2:1.1+R()*.6}));
+
+// ---------- layout (world = CSS px at camera zoom 1)
+let W,H,dpr,fs,cw,lh,ox,oy,floorY,heartX,heartY;
+let Q=2,ftAvg=16,qCool=3;
+function size(){dpr=Math.min(devicePixelRatio||1,Q===2?1.5:Q===1?1:0.8);W=innerWidth;H=innerHeight;
+  cv.width=art.width=Math.round(W*dpr);cv.height=art.height=Math.round(H*dpr);tint.width=Math.ceil(cv.width/2);tint.height=Math.ceil(cv.height/2);
+  skyKey=-1;buildCaches();
+  g1.width=Math.ceil(cv.width/4);g1.height=Math.ceil(cv.height/4);
+  g2.width=Math.ceil(cv.width/12);g2.height=Math.ceil(cv.height/12);
+  fs=Math.min((W-32)/(cols*0.6),(H*0.8)/(rows*1.15));
+  cw=fs*0.6;lh=fs*1.15;ox=(W-cw*cols)/2;oy=H*0.055;
+  floorY=oy+rows*lh+lh*0.4;heartX=W/2;heartY=oy+rows*lh*0.36;
+  buildField();if(typeof UL!=='undefined')for(const u of UL)u.dirty=true;}
+const gp=(gx,gy)=>[ox+gx*cw,oy+gy*lh];
+
+// ---------- camera
+const cam={x:0,y:0,z:1,r:0},camT={x:0,y:0,z:1,r:0};
+let camRate=0.035;
+function shot(x,y,z,r=0,rate=0.035){camT.x=x;camT.y=y;camT.z=z;camT.r=r;camRate=rate}
+let shake=0,shX=0,shY=0;
+function camApply(c2){c2.translate(W/2+shX,H/2+shY);c2.rotate(cam.r);c2.scale(cam.z,cam.z);c2.translate(-cam.x,-cam.y)}
+function w2s(x,y){x-=cam.x;y-=cam.y;x*=cam.z;y*=cam.z;const cs=Math.cos(cam.r),sn=Math.sin(cam.r);return[W/2+shX+x*cs-y*sn,H/2+shY+x*sn+y*cs]}
+function s2w(x,y){x-=W/2+shX;y-=H/2+shY;const cs=Math.cos(-cam.r),sn=Math.sin(-cam.r);const X=(x*cs-y*sn)/cam.z,Y=(x*sn+y*cs)/cam.z;return[X+cam.x,Y+cam.y]}
+
+// ---------- background glyph field (screen space)
+let field=[],fcell=20;
+function buildField(){fcell=Math.max(16,Math.round(Math.min(W,H)/42));field=[];
+  for(let y=fcell/2;y<H;y+=fcell)for(let x=fcell/2;x<W;x+=fcell)field.push({x,y,g:'.·:+*'[R()*5|0],o:R()*TAU})}
+
+// ---------- pointer
+let smx=-1e4,smy=-1e4,psx=-1e4,psy=-1e4,pv=0,lean=0,tlean=0;
+addEventListener('pointermove',e=>{smx=e.clientX;smy=e.clientY;tlean=(smx/W-.5)*2});
+addEventListener('pointerleave',()=>{smx=smy=-1e4;tlean=0});
+let pDown=null,holdTimer=0;
+addEventListener('pointerdown',e=>{if(phase!=='bloom')return;pDown={x:e.clientX,y:e.clientY,t:performance.now(),held:false};
+  clearTimeout(holdTimer);holdTimer=setTimeout(()=>{if(pDown){pDown.held=true;launchFireworks()}},600)});
+addEventListener('pointerup',e=>{clearTimeout(holdTimer);if(pDown&&!pDown.held&&phase==='bloom')loveBurst(pDown.x,pDown.y);pDown=null});
+addEventListener('pointercancel',()=>{clearTimeout(holdTimer);pDown=null});
+
+// ---------- timeline state
+let beatPhase=0,beatPeriod=1.5,beatVis=1,beatVol=1;
+let wordsDustUntil=0,fairyT=0,fairyOn=false,fairyDone=false,dust=[],glints=[],fFlash=0;
+let ts=1,tsT=1,simT=0,dim=0,dimT=0,chroma=0,beams=0,gatherOn=false,gatherAmt=0,seed=null,lastBeat=-1;
+let now=0,phase='dark',events=[],shocks=[],bloomBoost=0,flare=0,form=0,artFade=1,beatOn=false,beatT=0,intensity=0;
+const at=(dt,fn)=>events.push({t:now+dt,fn});
+const setSub=s=>{if(!s){$sub.classList.remove('on');return}$sub.classList.remove('on');setTimeout(()=>{$sub.textContent=s;$sub.classList.add('on')},180)};
+function tween(q,t0,dur,sx,sy,qx,qy,ez,scr){q.mode=1;q.t0=t0;q.dur=dur;q.sx=sx;q.sy=sy;q.qx=qx;q.qy=qy;q.ez=ez;q.scr=scr;q.flash=0}
+
+function start(fast){
+  bakeOK=false;unbakeAll();
+  $again.classList.add('hide');$cta.classList.add('hide');
+  phase='forming';events=[];artFade=1;beatOn=false;form=0;
+  document.body.classList.add('cine');$title.classList.remove('on');$hint.classList.remove('on');
+  const WS=0.9,WG=3.7,WE=WS+WORDS.length*WG, L=fast?0.9:WE+2.4, STEP=0.86, TW=L+8*STEP+0.25, TR=TW+2.0, TF=TR+2.9;
+  const base=now;
+  bursts=[];landed=[];nameStars=null;skyLook=false;gatherOn=false;beams=0;$hero.classList.remove('on','out');
+  if(!fast){phase='words';seed=null;beatOn=true;beatPhase=0;beatPeriod=1.7;beatVis=.3;beatVol=.75;
+    cam.x=camT.x=W/2;cam.y=camT.y=H*0.5;cam.z=camT.z=1.05;cam.r=camT.r=0;shot(W/2,H*0.5,1.12,0,0.004);
+    WORDS.forEach((w,i)=>{const t0=WS+i*WG;at(t0,()=>showWords(w,i===WORDS.length-1));at(t0+0.15,()=>bell(WNOTES[i],.07));at(t0+WG-1.25,hideWords)});
+    const [kx,ky]=gp(...knot);
+    at(WE-0.5,()=>shot(kx,oy+rows*lh*0.25,1.35,0,0.03));
+    at(WE+0.1,()=>{phase='forming';beatPeriod=1.3;beatVis=.5;seed={t0:now+0.15,t1:now+1.45,x:kx,y0:oy-lh*12,y1:ky};whoosh(1.4,.12,2400,500,.1)});
+    at(WE+1.6,()=>{seed=null;shocks.push({x:kx,y:ky,t:now,size:'m'});shocks.push({x:kx,y:ky,t:now+0.15,size:'s'});
+      shake=16;flare=.5;bloomBoost=.9;sparkBurst(kx,ky,40,'#ffe2a8');boom(.55);bell(1174.7,.16);setSub('a seed of something')});
+  }else{seed=null;shot(...gp(...seeds[order[0]]),1.9,-0.03,0.02)}
+  for(const q of cells){q.mode=0;q.flash=0;q.vx=q.vy=0;
+    const [hx,hy]=gp(q.gx,q.gy);
+    if(q.kind===1||q.kind===2){
+      const T0=base+L+order.indexOf(q.tid)*STEP;
+      if(q.kind===2){ // stems rise from the base, leaves unfold sideways off the stem
+        const s=leafSpan[q.tid],u=(s.y1-q.gy)/(s.y1-s.y0+1);
+        const [bx]=gp(s.bx,0);const sx=hx+(bx-hx)*0.75,sy=hy+lh*2.5;
+        tween(q,T0+u*0.42+q.sd*0.04,0.42+R()*0.12,sx,sy,(sx+hx)/2,sy-lh*1.5,'out',0);
+      }else{ // petals unfurl from the heart of their own bloom, curling as they go
+        const [sx,sy]=gp(...seeds[q.tid]);const d=Math.hypot(hx-sx,hy-sy),a=Math.atan2(hy-sy,hx-sx);
+        const curl=d*0.45*(q.tid%2?1:-1);
+        tween(q,T0+0.34+Math.min(1,d/(cw*16))*0.32+q.sd*0.05,0.85+R()*0.3,sx+(R()-.5)*2,sy+(R()-.5)*2,
+          (sx+hx)/2-Math.sin(a)*curl,(sy+hy)/2+Math.cos(a)*curl,'back',0.35);
+      }
+    }else if(q.kind===3){ // paper swoops in from both wings and folds over the stems
+      const side=q.gx<knot[0]?-1:1;
+      const sx=hx+side*(W*0.5+R()*60),sy=hy+lh*(8+R()*5);
+      tween(q,base+TW+(rows-q.gy)/rows*0.6+Math.abs(q.gx-knot[0])/cols*0.3+q.sd*0.12,1.0+R()*0.3,
+        sx,sy,hx+side*W*0.12,hy-lh*(6+R()*4),'inout',0);
+    }else{ // ribbon: loops trace out of the knot, tails slip down, the knot pulls tight
+      const dx=q.gx-knot[0],dy=q.gy-knot[1];const [kx,ky]=gp(...knot);
+      if(Math.abs(dx)<4&&Math.abs(dy)<2.6)tween(q,base+TR+1.85+q.sd*0.08,0.32,hx,hy-lh*1.4,hx,hy-lh*0.7,'back',0);
+      else if(dy>2.6)tween(q,base+TR+1.15+dy/ribMaxDy*0.6+q.sd*0.05,0.5,kx+dx*cw*0.25,ky,hx-dx*cw*0.1,(ky+hy)/2,'out',0);
+      else{const lcx=knot[0]+Math.sign(dx||1)*ribMaxDx*0.45,lcy=knot[1]-1.5;
+        const b0=Math.atan2(knot[1]-lcy,(knot[0]-lcx)*0.5),a0=Math.atan2(q.gy-lcy,(q.gx-lcx)*0.5);
+        const u=((dx<0?a0-b0:b0-a0)%TAU+TAU)%TAU/TAU;const [lx,ly]=gp(lcx,lcy);
+        tween(q,base+TR+0.1+u*1.0+q.sd*0.04,0.38,hx+(lx-hx)*0.4,hy+(ly-hy)*0.4,hx+(lx-hx)*0.15,hy+(ly-hy)*0.15-lh*0.6,'out',0);}
+    }}
+  order.forEach((tid,i)=>{const T0=L+i*STEP;
+    at(T0-0.15,()=>{const [sx,sy]=gp(...seeds[tid]);shot(sx,sy+lh*3,1.62+0.18*(i%2),(i%2?1:-1)*0.028,0.04);setSub(`bloom ${ROMAN[i]} of VIII`)});
+    at(T0+0.4,()=>bell(NOTES[i],.17));
+    at(T0+1.15,()=>{const [sx,sy]=gp(...seeds[tid]);shocks.push({x:sx,y:sy,t:now,size:'s'});bloomBoost=Math.max(bloomBoost,.4)})});
+  at(TW-0.25,()=>{shot(W/2,oy+rows*lh*0.52,1.0,0,0.03);setSub('wrapped in paper');whoosh(1.5,.22,250,2600);whoosh(1.3,.18,300,3400,.4)});
+  at(TR-0.2,()=>{const [kx,ky]=gp(...knot);shot(kx,ky+lh*2,2.05,0.02,0.035);setSub('tied with a ribbon');[440,587.33,739.99,880,1174.7].forEach((f,i)=>pluck(f,.13,0.35+i*0.24))});
+  at(TR+2.25,()=>{const [kx,ky]=gp(...knot);
+    for(const q of cells)if(q.mode===2&&(q.kind===4||(q.kind===3&&Math.abs(q.gy-knot[1])<7))){q.vx+=(kx-q.px)*0.06;q.vy+=(ky-q.py)*0.06}
+    shocks.push({x:kx,y:ky,t:now,size:'m'});bloomBoost=Math.max(bloomBoost,.7);sparkBurst(kx,ky,40,'#ffd08a');shake=8;pluck(293.66,.22);bell(1479.98,.12,.05)});
+  at(TF-3.2,()=>{beatPeriod=0.72;beatVis=.9;beatVol=1});
+  at(TF-1.5,()=>{whoosh(1.6,.32,180,7000);setSub('')});
+  at(TF-0.45,()=>{dimT=0.92;bakeOK=true});
+  at(TF-0.5,()=>{shot(W/2,oy+rows*lh*0.5,0.88,0,0.06)});
+  at(TF,()=>{phase='bloom';document.body.classList.remove('cine');bloomBoost=1.8;flare=1;
+    dim=dimT=0;ts=tsT=0.16;shake=26;chroma=1;beams=0.01;
+    shocks.push({x:heartX,y:heartY,t:now,size:'l'});shocks.push({x:heartX,y:heartY,t:now+0.12,size:'m'});petalBurst(heartX,heartY,110);sparkBurst(heartX,heartY,40,'#ffe2a8');
+    boom(.95);hearts.forEach(hh=>hh.boost=1);[587.33,739.99,880,1174.7,1479.98].forEach((f,i)=>bell(f,.15,i*0.07));padOpen();
+    at(0.5,()=>{tsT=1});at(0.08,()=>{$hero.classList.add('on');fairyT=performance.now();fairyOn=true;fairyDone=false;glints=[];
+      [1174.66,1318.51,1479.98,1760,1975.53,2349.32].forEach((f,i)=>bell(f,.06,0.15+i*0.38))});at(0.6,()=>{gatherOn=true});at(11,()=>{gatherOn=false});
+    at(4.6,()=>{fairyOn=false;$hero.classList.add('out');$title.classList.add('on');$hint.classList.add('on');$again.classList.remove('hide');scrambleTitle()});
+    // the camera looks up: the word is written in the sky above the bouquet
+    at(6.0,()=>{skyLook=true;shot(W/2,oy-H*0.26,1,0,0.022)});
+    at(6.8,()=>{buildNameStars();bell(1760,.05);bell(2349.32,.04,.3)});
+    at(14.2,()=>{skyLook=false;shot(W/2,oy+rows*lh*0.5,1,0,0.022)});
+    at(16.5,()=>$cta.classList.remove('hide'));
+    gust(now+0.2,3.2)});
+  at(TF+0.6,()=>shot(W/2,oy+rows*lh*0.5,1.0,0,0.02));
+  at(TF+0.1,()=>{beatPeriod=1.5;beatVis=1;beatOn=true});
+}
+const WORDS=["i'm not always good with words",
+  "but you're on my mind more than you know",
+  "so let these flowers say it for me"];
+const WNOTES=[587.33,739.99,880];
+function showWords(text,last){$lead.classList.remove('on','out');
+  $lead.innerHTML=`<p class="${last?'last':''}">`+text.split(' ').map((w,i)=>`<span style="transition-delay:${(i*0.14).toFixed(2)}s">${w}</span>`).join('')+'</p>';
+  void $lead.offsetWidth;$lead.classList.add('on');wordsDustUntil=performance.now()+2200}
+function hideWords(){$lead.querySelectorAll('span').forEach((sp,i)=>sp.style.transitionDelay=(i*0.05).toFixed(2)+'s');$lead.classList.add('out')}
+const NOTES=[587.33,659.25,739.99,880,987.77,1174.66,1318.51,1479.98];
+const order=seeds.map((s,i)=>i).sort((a,b)=>seeds[a][1]-seeds[b][1]); // back row first
+
+function scatter(x,y){
+  if(phase==='scatter'||phase==='dark'||phase==='words')return;
+  $again.classList.add('hide');$cta.classList.add('hide');
+  phase='scatter';events=[];bloomBoost=Math.max(bloomBoost,.9);flare=1;setSub('');$title.classList.remove('on');
+  const [wx,wy]=s2w(x,y);shocks.push({x:wx,y:wy,t:now,size:'m'});petalBurst(wx,wy,70);shake=14;chroma=.6;gatherOn=false;$hero.classList.remove('on','out');boom(.5);whoosh(1,.2,3000,300);
+  bakeOK=false;unbakeAll();
+  const maxD=Math.hypot(W,H);
+  for(const q of cells){if(q.mode!==2){q.mode=0;continue}
+    const dx=q.px-wx,dy=q.py-wy,d=Math.hypot(dx,dy)||1,f=1-Math.min(1,d/maxD);
+    const s=(14+R()*22)*(0.35+f);q.vx+=dx/d*s+(R()-.5)*5;q.vy+=dy/d*s+(R()-.5)*5-3;q.mode=3;}
+  at(1.5,()=>start(true));
+}
+
+// ---------- wind: a slow breathing breeze plus travelling gusts
+let gusts=[];
+function gust(t0,amp){gusts.push({t0,dur:3.6,amp})}
+function gustAt(T,x01){let s=0;for(const g of gusts){const u=(T-g.t0)/g.dur;if(u<0||u>1)continue;
+  const front=u*1.7-0.35;s+=g.amp*Math.exp(-1*((x01-front)/0.22)**2)*Math.sin(Math.PI*u)}return s}
+let nextGust=6;
+
+// ---------- particles
+const glow=document.createElement('canvas');glow.width=glow.height=64;{const gx=glow.getContext('2d'),gr=gx.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,236,190,1)');gr.addColorStop(.25,'rgba(255,214,150,.55)');gr.addColorStop(1,'rgba(255,190,120,0)');gx.fillStyle=gr;gx.fillRect(0,0,64,64)}
+const flies=Array.from({length:58},(_,i)=>({i,bx:R(),by:R(),f1:.12+R()*.2,f2:.2+R()*.3,ph:R()*TAU,fb:.6+R()*1.2,s:.6+R()*.8,x:null,y:null}));
+let embers=[],landed=[],skyLook=false;const pair=[[],[]];
+const hearts=Array.from({length:18},()=>newHeart(true));
+function newHeart(any){return{x:R(),y:any?R():1.05,v:.03+R()*.04,ph:R()*TAU,s:.7+R()*1.1,g:R()<.55?'\u2665':'\u2661',col:R()<.6?'#ff6f9f':'#ffb3cc',boost:0}}
+const falls=Array.from({length:26},()=>newFall(true));
+function newFall(any){return{x:R()*1.3-.15,y:any?R()*-1.2:-0.08-R()*0.3,vy:.025+R()*.03,vx:0,ph:R()*TAU,rot:R()*TAU,vr:(R()-.5)*1.6,flip:R()*TAU,vf:1.5+R()*2.5,
+  g:'@%o()*'[R()*6|0],col:['#ff5c93','#ffa3c4','#e8357a','#ffc1d6'][R()*4|0],s:.9+R()*.9}}
+let bursts=[];
+function petalBurst(x,y,n){for(let i=0;i<n;i++){const a=R()*TAU,s=3+R()*11;
+  bursts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,rot:R()*TAU,vr:(R()-.5)*.4,flip:R()*TAU,vf:3+R()*5,life:0,max:2.6+R()*1.8,
+    g:'@%o()*'[R()*6|0],col:['#ff5c93','#ffa3c4','#e8357a','#ffc1d6','#ffe0ea'][R()*5|0],s:.8+R()*1.1})}}
+function sparkBurst(x,y,n,col){for(let i=0;i<n;i++){const a=R()*TAU,s=2+R()*6;
+  bursts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,rot:0,vr:0,flip:0,vf:0,life:0,max:.9+R()*.6,g:'*+·'[R()*3|0],col,s:.7+R()*.5})}}
+let streaks=[];
+const motes=Array.from({length:70},()=>({x:R(),y:R(),v:.006+R()*.02,ph:R()*TAU,g:'·.°'[R()*3|0]}));
+
+// ---------- frame
+let last=0;
+function frame(ms){
+  const RT=ms/1000,rdt=Math.min(.05,RT-(last||RT-.016));last=RT;ts+=(tsT-ts)*Math.min(1,rdt*1.6);
+  ftAvg=ftAvg*0.94+Math.min(100,rdt*1000)*0.06;qCool-=rdt;
+  if(qCool<=0&&Q>0&&phase!=='dark'&&ftAvg>23){Q--;qCool=2.5;ftAvg=16;size()}
+  const dt=rdt*ts;simT+=dt;const T=simT;now=T;const f60=dt*60;
+  shake*=Math.pow(.9,rdt*60);shX=(R()-.5)*shake;shY=(R()-.5)*shake;chroma*=Math.pow(.9,rdt*60);
+  dim+=(dimT-dim)*Math.min(1,rdt*9);if(phase==='bloom')beams=Math.min(1,beams+rdt*0.5);
+  
+  for(const e of events.splice(0))(e.t<=now?e.fn():events.push(e));
+  if(phase==='forming')form=clamp(form+dt/15,0,0.95);else if(phase==='bloom')form=Math.min(1,form+dt*0.6);
+  artFade+=((phase==='scatter'?0:1)-artFade)*(phase==='scatter'?0.03:0.2)*f60;
+  // camera
+  const cr=1-Math.pow(1-camRate,f60);cam.x+=(camT.x-cam.x)*cr;cam.y+=(camT.y-cam.y)*cr;cam.z+=(camT.z-cam.z)*cr;cam.r+=(camT.r-cam.r)*cr;
+  if(seed&&T<seed.t1){const [sx,sy]=seedPos(T);camT.x=sx;camT.y=sy+lh*5;camT.z=1.35;camRate=0.09}
+  if(phase==='bloom'&&!skyLook){camT.x=W/2+Math.sin(T*0.11)*W*0.012;camT.y=oy+rows*lh*0.5+Math.sin(T*0.07)*H*0.008}
+  // pointer -> world, wind
+  pv=Math.min(40,Math.hypot(smx-psx,smy-psy));psx=smx;psy=smy;
+  const [mx,my]=smx>-1e3?s2w(smx,smy):[-1e5,-1e5];
+  lean+=(tlean-lean)*0.025*f60;
+  if(T>nextGust&&phase!=='dark'){gust(T,1.2+R()*1.4);nextGust=T+7+R()*7}
+  gusts=gusts.filter(g=>T-g.t0<g.dur);
+  const breeze=0.55*Math.sin(T*0.31)+0.3*Math.sin(T*0.73+1)+0.15*Math.sin(T*1.7+2)+lean*1.2;
+  const hs=heads.map(h=>h.a*Math.sin(T*h.f+h.ph)*0.55+Math.sin(T*h.f2+h.ph*2)*0.12);
+  const gCache=new Float32Array(cols+1);for(let i=0;i<=cols;i++)gCache[i]=gustAt(T,i/cols);
+  if(beatOn){beatPhase+=dt/beatPeriod;if(beatPhase>=1){beatPhase-=1;thump(.3*beatVol);thump(.18*beatVol,.24*Math.min(1,beatPeriod/1.5))}
+    const u=beatPhase;intensity=(Math.exp(-1*((u-.05)/.035)**2)+0.6*Math.exp(-1*((u-.2)/.04)**2))*beatVis}else intensity=0;
+
+  // ---- unit motion: tulip heads sway as one, leaves flutter by row, paper rustles, ribbon tails swing
+  for(const u of UL){const gu=gCache[clamp(u.col,0,cols)],b=u.b;let dx=0,dy=0;
+    if(u.kind===1){dx=b*(breeze+gu*1.6+hs[u.tid])*cw*2.3;dy=Math.abs(dx)*0.1-b*gu*lh*0.15}
+    else if(u.kind===2){dx=b*(breeze+gu*1.9)*cw*2.1+Math.sin(T*2.4+u.gy*0.35)*b*cw*(0.25+Math.abs(gu)*0.5);dy=Math.abs(dx)*0.08}
+    else if(u.kind===3){dx=b*(breeze+gu)*cw*0.9+Math.sin(T*3+u.gy*0.5)*gu*cw*0.15}
+    else{const dyN=Math.max(0,u.gy-knot[1])/ribMaxDy;dx=dyN*(Math.sin(T*1.3+u.col*0.12)*0.6+gu*1.6+breeze*0.4)*cw;dy=-Math.abs(dx)*0.1}
+    u.dx=dx;u.dy=dy}
+  const damp74=Math.pow(.74,f60),damp92=Math.pow(.92,f60);
+  // ---- cells
+  for(const q of cells){
+    if(q.mode===0)continue;
+    // natural target: heads move as one, leaves flutter, paper barely rustles, tails swing
+    const tx=ox+q.gx*cw+q.u.dx,ty=oy+q.gy*lh+q.u.dy;
+    if(q.baked){const ddx=tx-mx,ddy=ty-my,rr=(100+pv*3)/cam.z;
+      if(ddx*ddx+ddy*ddy<rr*rr){q.baked=false;q.u.dirty=true;q.px=tx;q.py=ty;q.vx=q.vy=0}else continue}
+    if(q.mode===1){const u=(T-q.t0)/q.dur;if(u<0)continue;
+      if(u>=1){q.mode=2;q.px=tx;q.py=ty;q.vx=q.vy=0;q.flash=1;q.g=q.ch}
+      else{const e=EASE[q.ez](u),a=(1-e)*(1-e),b=2*(1-e)*e,c2=e*e;q.px=a*q.sx+b*q.qx+c2*tx;q.py=a*q.sy+b*q.qy+c2*ty;
+        q.g=u<q.scr?SCR[(q.gx*7+q.gy*13+(T*18|0))%SCR.length]:q.ch;q.flash=Math.max(q.flash,(1-u)*0.35)}}
+    else if(q.mode===2){
+      q.vx=(q.vx+(tx-q.px)*0.16*f60)*damp74;q.vy=(q.vy+(ty-q.py)*0.16*f60)*damp74;
+      const ddx=q.px-mx,ddy=q.py-my,d2=ddx*ddx+ddy*ddy,rr=(100+pv*3)/cam.z;
+      if(d2<rr*rr){const d=Math.sqrt(d2)||1,s=(1-d/rr)*(2.2+pv*0.15)*f60;q.vx+=ddx/d*s;q.vy+=ddy/d*s;if(s>0.8)q.flash=Math.max(q.flash,.45)}
+      q.px+=q.vx*f60;q.py+=q.vy*f60;
+      if(bakeOK&&d2>rr*rr*1.4&&q.flash<0.05&&Math.abs(tx-q.px)+Math.abs(ty-q.py)<0.6&&Math.abs(q.vx)+Math.abs(q.vy)<0.3){q.baked=true;q.u.dirty=true;continue}}
+    else{q.vx*=Math.pow(.965,f60);q.vy=q.vy*Math.pow(.965,f60)+0.1*f60;q.px+=q.vx*f60;q.py+=q.vy*f60}
+    q.flash*=damp92;
+  }
+  bloomBoost*=Math.pow(.984,f60);flare*=Math.pow(.95,f60);
+
+  // ---- art layer (world space, through the camera)
+  ax.setTransform(dpr,0,0,dpr,0,0);ax.clearRect(0,0,W,H);camApply(ax);
+  ax.font=`700 ${fs}px "IBM Plex Mono",ui-monospace,monospace`;ax.textBaseline='top';
+  if(bakeOK)for(const u of UL){if(u.dirty)renderUnit(u);if(!u.n)continue;ax.globalAlpha=(u.kind===3?0.9:1)*artFade;
+    ax.drawImage(u.cv,ox+u.x0*cw+u.dx-UPAD,oy+u.y0*lh+u.dy-UPAD,u.w,u.h)}
+  for(const key in groups){const bar=key.indexOf('|'),kd=key.slice(bar+1);
+    ax.fillStyle=key.slice(0,bar);ax.globalAlpha=(kd==='3'?0.9:1)*artFade;
+    for(const q of groups[key])if(!q.baked&&(q.mode===2||q.mode===3||(q.mode===1&&T>=q.t0)))ax.fillText(q.g,q.px,q.py);}
+  ax.globalCompositeOperation='lighter';ax.fillStyle='#fff3f7';
+  for(const q of cells)if(!q.baked&&q.flash>0.04&&q.mode){ax.globalAlpha=q.flash*0.8*artFade;ax.fillText(q.g,q.px,q.py)}
+  if(phase==='bloom')for(let i=0;i<18;i++){const q=petals[(Math.floor(T*2.2)*37+i*977)%petals.length];
+    ax.globalAlpha=Math.max(0,Math.sin(T*2.2*Math.PI+i))*0.9;ax.fillText('*',q.baked?ox+q.gx*cw+q.u.dx:q.px,q.baked?oy+q.gy*lh+q.u.dy:q.py)}
+  ax.globalCompositeOperation='source-over';ax.globalAlpha=1;
+  if(Q>0)drawFog(T);drawWorldParticles(T,dt,f60);
+  ax.setTransform(dpr,0,0,dpr,0,0);
+
+  // ---- composite
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(dpr,0,0,dpr,0,0);
+  const [shx,shy]=w2s(heartX,heartY);
+  drawSky();drawStars(T,rdt);drawSpot(T);if(Q>0){drawBeams(T);drawRays(T,shx,shy);drawField(T)}
+  ctx.setTransform(1,0,0,1,0,0);
+  g1x.clearRect(0,0,g1.width,g1.height);g1x.drawImage(art,0,0,g1.width,g1.height);
+  g2x.clearRect(0,0,g2.width,g2.height);g2x.drawImage(g1,0,0,g2.width,g2.height);
+  const g1a=Q>0?1:0;
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  const breathe=0.78+0.22*Math.sin(T*0.9)+intensity*0.45;
+  ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha=Math.min(1,0.45*breathe+bloomBoost*0.3);ctx.drawImage(g2,0,0,cv.width,cv.height);
+  if(g1a){ctx.globalAlpha=Math.min(1,0.28*breathe+bloomBoost*0.25);ctx.drawImage(g1,0,0,cv.width,cv.height)}
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  ctx.drawImage(art,0,0);
+  if(chroma>0.03&&Q===2){const off=chroma*9*dpr;for(const [col,o] of [['#ff2a55',off],['#29d4ff',-off]]){
+    tnx.globalCompositeOperation='copy';tnx.drawImage(art,0,0,tint.width,tint.height);tnx.globalCompositeOperation='source-in';tnx.fillStyle=col;tnx.fillRect(0,0,tint.width,tint.height);
+    ctx.globalCompositeOperation='lighter';ctx.globalAlpha=chroma*0.55;ctx.drawImage(tint,o,o*0.3,cv.width,cv.height)}
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1}
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(Q===2)drawReflection();
+  ctx.save();camApply(ctx);drawShocks(T);ctx.restore();
+  if(flare>0.01){const gr=ctx.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*0.75);
+    gr.addColorStop(0,`rgba(255,226,238,${flare*0.4})`);gr.addColorStop(.35,`rgba(255,111,159,${flare*0.14})`);gr.addColorStop(1,'rgba(255,111,159,0)');
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}
+  drawFairy(rdt);
+  if(dim>0.005){ctx.fillStyle=`rgba(0,0,0,${dim})`;ctx.fillRect(0,0,W,H)}
+  ctx.drawImage(vigC,0,0,W,H);
+  if(!reduce)requestAnimationFrame(frame);
+}
+
+// ---------- world particles: fireflies, falling petals, bursts, wind streaks
+function drawWorldParticles(T,dt,f60){
+  drawNameStars();
+  const f=form;
+  // wind streaks ride the gusts
+  for(const g of gusts){const u=(T-g.t0)/g.dur;if(u>0&&u<.8&&R()<0.35*f60&&streaks.length<40)
+    streaks.push({x:ox-cw*20,y:oy+R()*rows*lh*0.9,v:(9+R()*8)*g.amp/1.8,g:['~~-','-~~~','~-','~~~-~','· ~~'][R()*5|0],a:.18+R()*.2})}
+  ax.font=`400 ${fs*1.2}px "IBM Plex Mono",monospace`;ax.textBaseline='middle';ax.fillStyle='#ffd9e6';
+  streaks=streaks.filter(s=>s.x<ox+cols*cw+cw*30);
+  for(const s of streaks){s.x+=s.v*f60;s.y+=Math.sin(s.x*0.01)*0.4;ax.globalAlpha=s.a*artFade;ax.fillText(s.g,s.x,s.y)}
+  // falling petals tumble, pushed by gusts
+  const left=ox-cw*25,span=cols*cw+cw*50,top=oy-lh*12,height=floorY-top+lh*4;
+  if(f>0.15)for(const pt of falls){const gu=gustAt(T,clamp(pt.x,0,1));
+    pt.vx+=(gu*0.012-pt.vx*0.04)*f60;pt.x+=pt.vx*f60/60+Math.sin(T*0.7+pt.ph)*0.0008*f60;pt.y+=pt.vy*f60/60;pt.rot+=pt.vr*dt;pt.flip+=pt.vf*dt;
+    const py=top+pt.y*height,px=left+pt.x*span;
+    if(phase==='bloom'&&py>floorY-lh*0.6&&px>ox&&px<ox+cols*cw&&R()<0.5){if(landed.length>=70)landed.shift();landed.push({x:px,y:floorY-lh*(0.2+R()*0.7),rot:R()*TAU,g:pt.g,col:pt.col,s:pt.s*0.85,sq:0.35+R()*0.4});Object.assign(pt,newFall(false))}
+    if(pt.y>1.05||pt.x>1.3||pt.x<-.3)Object.assign(pt,newFall(false));
+    ax.save();ax.translate(left+pt.x*span,top+pt.y*height);ax.rotate(pt.rot);ax.scale(Math.cos(pt.flip),1);
+    ax.font=`600 ${fs*1.5*pt.s}px "IBM Plex Mono",monospace`;ax.globalAlpha=0.8*Math.min(1,(f-0.15)*2)*artFade;ax.fillStyle=pt.col;ax.fillText(pt.g,0,0);ax.restore()}
+  for(const l of landed){ax.save();ax.translate(l.x,l.y);ax.rotate(l.rot);ax.scale(l.sq,1);ax.font=`600 ${fs*1.4*l.s}px "IBM Plex Mono",monospace`;
+    ax.globalAlpha=0.75*artFade;ax.fillStyle=l.col;ax.fillText(l.g,0,0);ax.restore()}
+  // bursts
+  bursts=bursts.filter(b=>b.life<b.max);ax.font=`600 ${fs*1.4}px "IBM Plex Mono",monospace`;
+  for(const b of bursts){b.life+=dt;b.vx*=Math.pow(.962,f60);b.vy=b.vy*Math.pow(.962,f60)+0.07*f60;b.x+=b.vx*f60;b.y+=b.vy*f60;b.rot+=b.vr*f60*0.1;b.flip+=b.vf*dt;
+    ax.save();ax.translate(b.x,b.y);ax.rotate(b.rot);ax.scale((b.vf?Math.cos(b.flip):1)*b.s,b.s);ax.globalAlpha=Math.max(0,1-b.life/b.max);ax.fillStyle=b.col;ax.fillText(b.g,0,0);ax.restore()}
+  // seed falling
+  if(seed&&T>=seed.t0-0.3&&T<seed.t1){const u=clamp((T-seed.t0)/(seed.t1-seed.t0),0,1);ax.globalCompositeOperation='lighter';
+    for(let j=14;j>=0;j--){const [x,y]=seedPos(T-j*0.035);ax.globalAlpha=(1-j/15)*0.8;ax.fillStyle=j?'#ffd6e4':'#ffffff';
+      ax.font=`600 ${fs*(j?1:1.6)}px "IBM Plex Mono",monospace`;ax.fillText(j?'·':'*',x-cw*0.3,y);
+      if(!j){const s2=fs*(6+u*4);ax.globalAlpha=0.9;ax.drawImage(glow,x-s2/2,y-s2/2,s2,s2)}}
+    ax.globalCompositeOperation='source-over'}
+  // embers rise once the bouquet is whole
+  if(phase==='bloom'&&embers.length<(Q===2?60:25)&&R()<0.5*f60)embers.push({x:ox+cols*cw*(0.2+R()*0.6),y:oy+rows*lh*(0.15+R()*0.5),vy:-(0.3+R()*0.8),vx:(R()-.5)*0.4,life:0,max:2.5+R()*3});
+  ax.globalCompositeOperation='lighter';ax.font=`600 ${fs*0.9}px "IBM Plex Mono",monospace`;
+  embers=embers.filter(e=>e.life<e.max);
+  for(const e of embers){e.life+=dt;e.x+=(e.vx+Math.sin(T*2+e.max*7)*0.3)*f60;e.y+=e.vy*f60;
+    ax.globalAlpha=Math.sin(Math.PI*e.life/e.max)*0.85*artFade;ax.fillStyle=e.life/e.max<.5?'#ffe2a8':'#ff9a6a';ax.fillText('·',e.x,e.y)}
+  // hearts drift upward, brighter on each heartbeat
+  ax.font=`600 ${fs*1.3}px "IBM Plex Mono",ui-monospace,monospace`;
+  for(const hh of hearts){hh.y-=hh.v*dt*(1+hh.boost*3);hh.boost*=Math.pow(.985,f60);if(hh.y<-0.1)Object.assign(hh,newHeart(false));
+    const x=left+hh.x*span+Math.sin(T*0.8+hh.ph)*cw*3,y=top+hh.y*(height+lh*10);
+    ax.globalAlpha=(0.34+0.3*intensity+0.4*hh.boost)*Math.min(1,(1-hh.y)*4)*artFade;ax.fillStyle=hh.col;
+    ax.save();ax.translate(x,y);ax.scale(hh.s,hh.s);ax.fillText(hh.g,0,0);ax.restore()}
+  // two fireflies dancing together above the bouquet
+  if(form>0.9){const pc=Math.min(1,(form-0.9)*10)*artFade,mx2=heartX+Math.sin(T*0.21)*cols*cw*0.42,my2=oy+rows*lh*0.12+Math.sin(T*0.33)*lh*5,rr=lh*(2+Math.sin(T*0.7)*0.6);
+    for(let k=0;k<2;k++){const a=T*1.7+k*Math.PI,x=mx2+Math.cos(a)*rr,y=my2+Math.sin(a)*rr*0.55,tr=pair[k];tr.push(x,y);if(tr.length>44)tr.splice(0,2);
+      for(let j=0;j<tr.length;j+=2){ax.globalAlpha=pc*(j/tr.length)*0.5;ax.fillStyle=k?'#ffc2da':'#ffe2a6';ax.fillRect(tr[j]-1,tr[j+1]-1,2,2)}
+      ax.globalAlpha=pc;ax.drawImage(glow,x-16,y-16,32,32)}}
+  // fireflies drift and blink, then gather into a heart around the bouquet
+  gatherAmt+=((gatherOn?1:0)-gatherAmt)*0.018*f60;
+  const hsz=cols*cw*0.6/16;
+  const nFly=Q===2?flies.length:Q===1?40:26;
+  for(const fl of flies){if(fl.i>=nFly)continue;const fx=left+fl.bx*span+Math.sin(T*fl.f1+fl.ph)*60+Math.sin(T*fl.f2*1.7)*24,
+      fy=top+lh*6+fl.by*(height-lh*10)+Math.cos(T*fl.f2+fl.ph)*40;
+    const th=fl.i/nFly*TAU+T*0.05;
+    const hx=heartX+16*Math.sin(th)**3*hsz+Math.sin(T*3+fl.ph)*3,hy=heartY+lh*3-(13*Math.cos(th)-5*Math.cos(2*th)-2*Math.cos(3*th)-Math.cos(4*th))*hsz+Math.cos(T*3+fl.ph)*3;
+    const tx=fx+(hx-fx)*gatherAmt,ty=fy+(hy-fy)*gatherAmt;
+    if(fl.x===null){fl.x=tx;fl.y=ty}fl.x+=(tx-fl.x)*Math.min(1,0.06*f60);fl.y+=(ty-fl.y)*Math.min(1,0.06*f60);
+    const blink=Math.pow(Math.max(0,Math.sin(T*fl.fb+fl.ph)),3)*(0.25+0.75*f);
+    const a=(blink+((0.7+0.3*intensity)-blink)*gatherAmt)*artFade;if(a<0.02)continue;
+    const s=26*fl.s*(1+gatherAmt*0.3);ax.globalAlpha=a*0.9;ax.drawImage(glow,fl.x-s/2,fl.y-s/2,s,s);
+    ax.globalAlpha=a;ax.fillStyle='#fff1cf';ax.font=`600 ${fs}px "IBM Plex Mono",monospace`;ax.fillText('·',fl.x-cw*0.3,fl.y)}
+  ax.globalCompositeOperation='source-over';ax.globalAlpha=1;ax.textBaseline='top';
+}
+
+// ---------- stage lighting
+function drawSpot(T){const a=(0.045+0.03*form+intensity*0.03)*artFade;if(a<0.01)return;
+  const [sx]=w2s(W/2,0),[,fy]=w2s(0,floorY);const sway=Math.sin(T*0.2)*W*0.015;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const gr=ctx.createLinearGradient(0,0,0,fy);gr.addColorStop(0,`rgba(255,226,236,${a*1.6})`);gr.addColorStop(.7,`rgba(255,170,200,${a*0.6})`);gr.addColorStop(1,'rgba(255,170,200,0)');
+  ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(sx-W*0.05+sway,-10);ctx.lineTo(sx+W*0.05+sway,-10);ctx.lineTo(sx+W*0.33,fy);ctx.lineTo(sx-W*0.33,fy);ctx.closePath();ctx.fill();
+  // dust in the beam
+  ctx.font=`400 ${Math.max(9,fs*0.9)}px "IBM Plex Mono",monospace`;ctx.fillStyle='#ffe3ec';ctx.textBaseline='middle';
+  if(Q>0)for(const m of motes){m.y-=m.v/60;if(m.y<0)m.y=1;const yy=m.y*fy,wHalf=W*0.05+(W*0.28)*(yy/fy);
+    const xx=sx+Math.sin(m.x*TAU+T*0.15+m.ph)*wHalf*0.9;ctx.globalAlpha=(0.15+0.5*Math.sin(T+m.ph)**2)*a*4;ctx.fillText(m.g,xx,yy)}
+  ctx.restore()}
+function drawRays(T,x,y){const f=form;if(f<=0.02)return;const a=(0.06*f+bloomBoost*0.05+intensity*0.04)*artFade;if(a<0.005)return;
+  const R0=Math.hypot(W,H)*0.8;ctx.save();ctx.translate(x,y);ctx.rotate(T*0.03);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.min(1,a);
+  ctx.drawImage(rayC,-R0,-R0,R0*2,R0*2);ctx.restore()}
+function drawField(T){
+  ctx.font=`400 ${fcell*0.62}px "IBM Plex Mono",monospace`;ctx.textBaseline='middle';ctx.textAlign='center';
+  const ss=shocks.map(s=>{const [x,y]=w2s(s.x,s.y);return{x,y,t:s.t,size:s.size}});
+  for(const c of field){
+    let a=0.015+0.012*Math.sin(T*0.7+c.o);
+    const dx=c.x-smx,dy=c.y-smy,d=phase==='words'?1e4:Math.hypot(dx,dy);if(d<220)a+=0.3*(1-d/220)**2;
+    for(const s of ss){const r=(T-s.t)*(s.size==='l'?620:s.size==='m'?260:140)*cam.z,dd=Math.abs(Math.hypot(c.x-s.x,c.y-s.y)-r);
+      if(dd<60)a+=(1-dd/60)*(s.size==='s'?0.2:0.5)*Math.max(0,1-(T-s.t)/(s.size==='l'?2.2:1.1))}
+    if(a<0.03)continue;
+    if(R()<0.004)c.g='.·:+*×'[R()*6|0];
+    ctx.globalAlpha=Math.min(.7,a);ctx.fillStyle=d<220?'#ff9cc0':'#c9879f';ctx.fillText(c.g,c.x,c.y)}
+  ctx.globalAlpha=1;ctx.textAlign='start'}
+function drawReflection(){
+  const [,fy]=w2s(0,floorY);if(fy>=H)return;
+  ctx.save();ctx.beginPath();ctx.rect(0,fy,W,H-fy);ctx.clip();
+  ctx.translate(0,fy);ctx.scale(1,-0.42);ctx.translate(0,-fy);ctx.globalAlpha=0.2*artFade;ctx.drawImage(art,0,0,W,H);ctx.restore();
+  ctx.save();const gr=ctx.createLinearGradient(0,fy,0,Math.min(H,fy+H*0.25));gr.addColorStop(0,'rgba(11,5,9,0.15)');gr.addColorStop(1,'rgba(11,5,9,1)');
+  ctx.fillStyle=gr;ctx.fillRect(0,fy,W,H-fy);
+  const lg=ctx.createLinearGradient(W*0.15,0,W*0.85,0);lg.addColorStop(0,'rgba(255,150,190,0)');lg.addColorStop(.5,`rgba(255,180,210,${0.28*artFade*form})`);lg.addColorStop(1,'rgba(255,150,190,0)');
+  ctx.fillStyle=lg;ctx.fillRect(W*0.15,fy-0.5,W*0.7,1);ctx.restore()}
+function drawShocks(T){
+  ctx.font=`600 ${fs*1.2}px "IBM Plex Mono",monospace`;ctx.textBaseline='middle';ctx.textAlign='center';ctx.globalCompositeOperation='lighter';
+  shocks=shocks.filter(s=>T-s.t<(s.size==='l'?2.4:1.2));
+  for(const s of shocks){const life=s.size==='l'?2.4:1.2,age=T-s.t,r=age*(s.size==='l'?620:s.size==='m'?260:140),a=Math.max(0,1-age/life)**1.5*(s.size==='s'?0.7:1);
+    const n=Math.min(110,Math.max(12,Math.floor(TAU*r/(cw*1.6))));
+    for(let i=0;i<n;i++){const an=i/n*TAU+age*0.3,jit=Math.sin(i*12.9+age*8)*6;
+      ctx.globalAlpha=a*(0.55+0.45*Math.sin(i*3.1+age*14));ctx.fillStyle=(s.size==='m'||i%5===0)?'#f0c48c':'#ff8fb5';
+      ctx.fillText('*-~=:.'[(i+(age*12|0))%6],s.x+Math.cos(an)*(r+jit),s.y+Math.sin(an)*(r+jit))}
+    if(s.size==='l'){ctx.globalAlpha=a*0.5;ctx.strokeStyle='#ffd3e2';ctx.lineWidth=1;ctx.beginPath();ctx.arc(s.x,s.y,r*0.92,0,TAU);ctx.stroke()}}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.textAlign='start'}
+
+// ---------- cached full-screen layers
+const skyC=document.createElement('canvas'),vigC=document.createElement('canvas'),rayC=document.createElement('canvas');let skyKey=-1;
+function buildCaches(){skyC.width=vigC.width=Math.ceil(W/4);skyC.height=vigC.height=Math.ceil(H/4);
+  const v=vigC.getContext('2d'),w=vigC.width,h=vigC.height,vg=v.createRadialGradient(w/2,h/2,Math.min(w,h)*0.32,w/2,h/2,Math.hypot(w,h)*0.6);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.92)');v.fillStyle=vg;v.fillRect(0,0,w,h);
+  const R0=Math.ceil(Math.hypot(W,H)*0.8/3);rayC.width=rayC.height=R0*2;const r=rayC.getContext('2d');r.translate(R0,R0);
+  const gr=r.createRadialGradient(0,0,0,0,0,R0);gr.addColorStop(0,'rgba(255,140,185,1)');gr.addColorStop(.5,'rgba(240,160,140,.3)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  r.fillStyle=gr;for(let i=0;i<20;i++){const a=i/20*TAU,wd=0.045+0.035*Math.sin(i*1.7);r.beginPath();r.moveTo(0,0);r.arc(0,0,R0,a-wd,a+wd);r.closePath();r.fill()}}
+// ---------- seed, fog, sky, beams
+function seedPos(T){const u=clamp((T-seed.t0)/(seed.t1-seed.t0),0,1),e=u*u;
+  return[seed.x+Math.sin(u*7)*cw*5*(1-u),seed.y0+(seed.y1-seed.y0)*e]}
+const FOGU=Array.from({length:5},()=>Array.from({length:26},()=>' .~-~ ·  ~-'[R()*11|0]).join(''));
+const fogRows=FOGU.map((u,i)=>({s:u.repeat(12),v:(i%2?1:-1)*(5+i*3),a:.05+i*.012}));
+function drawFog(T){const cwf=fs*1.3*0.6,unit=26*cwf;ax.font=`400 ${fs*1.3}px "IBM Plex Mono",monospace`;ax.textBaseline='middle';ax.fillStyle='#f5cfe0';
+  const gu=gustAt(T,0.5);
+  fogRows.forEach((r,i)=>{const off=((T*r.v*(1+Math.abs(gu)))%unit+unit)%unit;ax.globalAlpha=r.a*(0.4+0.6*form)*artFade;
+    ax.fillText(r.s,ox-unit*3+off,floorY-lh*(4.5-i*1.15))});
+  ax.globalAlpha=1;ax.textBaseline='top'}
+function drawSky(){const key=Math.round(form*60);
+  if(key!==skyKey){skyKey=key;const m=key/60,lerp=(a,b)=>a.map((v,i)=>Math.round(v+(b[i]-v)*m));const c0=lerp([8,9,22],[30,8,24]),c1=lerp([0,0,2],[3,1,3]);
+    const s2=skyC.getContext('2d'),w=skyC.width,h=skyC.height,gr=s2.createRadialGradient(w/2,h*0.42,0,w/2,h*0.42,Math.max(w,h)*0.72);
+    gr.addColorStop(0,`rgb(${c0})`);gr.addColorStop(.75,`rgb(${c1})`);gr.addColorStop(1,`rgb(${c1})`);s2.fillStyle=gr;s2.fillRect(0,0,w,h)}
+  ctx.drawImage(skyC,0,0,W,H)}
+function drawBeams(T){if(beams<0.01)return;const L2=Math.hypot(W,H)*1.1;ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const [side,rgb] of [[-1,'255,120,170'],[1,'255,205,140']]){
+    ctx.save();ctx.translate(W/2+side*W*0.52,H+20);ctx.rotate(-side*(0.42+Math.sin(T*0.37+side*1.3)*0.3));
+    const gr=ctx.createLinearGradient(0,0,0,-L2);gr.addColorStop(0,`rgba(${rgb},${0.16*beams})`);gr.addColorStop(.6,`rgba(${rgb},${0.05*beams})`);gr.addColorStop(1,`rgba(${rgb},0)`);
+    ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(6,0);ctx.lineTo(L2*0.09,-L2);ctx.lineTo(-L2*0.09,-L2);ctx.closePath();ctx.fill();ctx.restore()}
+  ctx.restore()}
+
+// ---------- sound (only after the viewer turns it on)
+let AC=null,out=null,rev=null,padF=null,padG=null,soundOn=false,everOn=false;
+function audioInit(){if(AC)return;AC=new (window.AudioContext||window.webkitAudioContext)();
+  const comp=AC.createDynamicsCompressor();comp.connect(AC.destination);
+  out=AC.createGain();out.gain.value=0;out.connect(comp);
+  rev=AC.createConvolver();const len=Math.floor(AC.sampleRate*3.4),buf=AC.createBuffer(2,len,AC.sampleRate);
+  for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.8)}
+  rev.buffer=buf;const wet=AC.createGain();wet.gain.value=0.55;rev.connect(wet);wet.connect(out);
+  padF=AC.createBiquadFilter();padF.type='lowpass';padF.frequency.value=520;padF.Q.value=0.8;
+  padG=AC.createGain();padG.gain.value=0;padF.connect(padG);padG.connect(out);padG.connect(rev);
+  [146.83,220,293.66,369.99,440].forEach((f,i)=>{for(const det of[-7,7]){const o=AC.createOscillator();padOsc.push([o,i]);o.type=i<2?'sawtooth':'triangle';o.frequency.value=f;o.detune.value=det+R()*4;
+    const g=AC.createGain();g.gain.value=i<2?0.045:0.035;o.connect(g);g.connect(padF);o.start()}});
+  const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=0.07;lg.gain.value=160;lfo.connect(lg);lg.connect(padF.frequency);lfo.start();
+}
+const padOsc=[],CHORDS=[[146.83,220,293.66,369.99,440],[123.47,185,246.94,293.66,369.99],[98,196,246.94,293.66,392],[110,164.81,220,277.18,329.63]];
+// ---------- music box: an original lullaby in D, one chord per bar
+const NOTE=n=>{const m={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11},r=n.match(/^([A-G]#?)(\d)$/);return 440*Math.pow(2,(m[r[1]]+12*(+r[2]+1)-69)/12)};
+const SONG=[[0,'D5 F#5 A5 D6 F#6 - E6 D6'],[1,'B4 D5 F#5 B5 D6 - C#6 B5'],[2,'G4 B4 D5 G5 B5 - A5 G5'],[3,'A4 C#5 E5 A5 C#6 - E6 C#6'],
+  [0,'D5 F#5 A5 D6 A6 - F#6 E6'],[1,'B4 D5 F#5 B5 F#6 - D6 C#6'],[2,'G4 B4 D5 G5 D6 - B5 A5'],[3,'A4 C#5 E5 A5 G5 - F#5 E5']].map(([c,s])=>[c,s.split(' ')]);
+let musicOn=false,mNext=0,mStep=0;const EIGHTH=0.42;
+function musicStart(){if(musicOn||!AC)return;musicOn=true;mNext=AC.currentTime+0.3;mStep=0;setInterval(musicTick,90)}
+function musicTick(){if(!AC)return;while(mNext<AC.currentTime+0.4){const bar=SONG[(mStep>>3)%SONG.length],i=mStep&7,tok=bar[1][i];
+    if(i===0){for(const [o,v] of padOsc)o.frequency.setTargetAtTime(CHORDS[bar[0]][v],mNext,0.5);mbox(CHORDS[bar[0]][0],mNext,0.05,'triangle',2.8)}
+    if(tok!=='-')mbox(NOTE(tok),mNext,(i===0||i===4)?0.055:0.038,'sine',1.7);
+    mNext+=EIGHTH;mStep++}}
+function mbox(f,t,vol,type,dec){const o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),g2=AC.createGain();o.type=type;o.frequency.value=f;o2.frequency.value=f*4;g2.gain.value=0.25;
+  o.connect(g);o2.connect(g2);g2.connect(g);env(g,t,vol,0.005,dec);vox(g,.6,.85);o.start(t);o2.start(t);o.stop(t+dec+.1);o2.stop(t+dec+.1)}
+function vox(node,dry,wet){const a=AC.createGain();a.gain.value=dry;node.connect(a);a.connect(out);const b=AC.createGain();b.gain.value=wet;node.connect(b);b.connect(rev)}
+function env(g,t,peak,att,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+att+dec)}
+function bell(f,vol=.15,delay=0){if(!soundOn)return;const t=AC.currentTime+delay;
+  for(const [m,v,d] of [[1,1,2.8],[2.76,.32,1.3],[5.4,.1,.6]]){const o=AC.createOscillator();o.frequency.value=f*m;const g=AC.createGain();env(g,t,vol*v,0.006,d);o.connect(g);vox(g,.75,.9);o.start(t);o.stop(t+d+.2)}}
+function pluck(f,vol=.13,delay=0){if(!soundOn)return;const t=AC.currentTime+delay;const o=AC.createOscillator();o.type='triangle';o.frequency.value=f;
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(f*6,t);lp.frequency.exponentialRampToValueAtTime(f*1.2,t+0.6);
+  const g=AC.createGain();env(g,t,vol,0.004,1.1);o.connect(lp);lp.connect(g);vox(g,.8,.7);o.start(t);o.stop(t+1.3)}
+function noise(){if(!noise.b){const len=AC.sampleRate*2,b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;noise.b=b}return noise.b}
+function whoosh(dur=1.2,vol=.2,f0=300,f1=3000,delay=0){if(!soundOn)return;const t=AC.currentTime+delay;const s=AC.createBufferSource();s.buffer=noise();s.loop=true;
+  const bp=AC.createBiquadFilter();bp.type='bandpass';bp.Q.value=1.3;bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+dur*0.8);
+  const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+dur*0.6);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(bp);bp.connect(g);vox(g,.7,.8);s.start(t);s.stop(t+dur+.1)}
+function boom(vol=.8,delay=0){if(!soundOn)return;const t=AC.currentTime+delay;const o=AC.createOscillator();o.frequency.setValueAtTime(95,t);o.frequency.exponentialRampToValueAtTime(30,t+1.3);
+  const g=AC.createGain();env(g,t,vol,0.008,1.7);o.connect(g);vox(g,1,.35);o.start(t);o.stop(t+1.9)}
+function thump(vol=.3,delay=0){if(!soundOn)return;const t=AC.currentTime+delay;const o=AC.createOscillator();o.frequency.setValueAtTime(72,t);o.frequency.exponentialRampToValueAtTime(42,t+0.22);
+  const g=AC.createGain();env(g,t,vol,0.006,0.32);o.connect(g);vox(g,1,.15);o.start(t);o.stop(t+0.45)}
+function padOpen(){if(!soundOn)return;const t=AC.currentTime;padF.frequency.cancelScheduledValues(t);padF.frequency.setValueAtTime(padF.frequency.value,t);
+  padF.frequency.setTargetAtTime(2800,t,0.35);padF.frequency.setTargetAtTime(760,t+2.8,2.5)}
+$snd.addEventListener('pointerdown',e=>e.stopPropagation());
+$snd.addEventListener('click',e=>{e.stopPropagation();audioInit();soundOn=!soundOn;
+  if(soundOn){AC.resume();musicStart();out.gain.setTargetAtTime(0.9,AC.currentTime,0.3);padG.gain.setTargetAtTime(0.5,AC.currentTime,2.5)}
+  else out.gain.setTargetAtTime(0,AC.currentTime,0.2);
+  $snd.setAttribute('aria-pressed',soundOn);$snd.textContent=soundOn?'sound on':'sound off';
+});
+const $gate=$('gate');
+$gate.addEventListener('pointerdown',e=>e.stopPropagation());
+$('open').addEventListener('click',e=>{e.stopPropagation();if(phase!=='dark')return;
+  try{audioInit();soundOn=true;AC.resume();musicStart();out.gain.setTargetAtTime(0.9,AC.currentTime,0.3);padG.gain.setTargetAtTime(0.5,AC.currentTime,3)}catch(err){soundOn=false}
+  $snd.setAttribute('aria-pressed',soundOn);$snd.textContent=soundOn?'sound on':'sound off';$snd.classList.remove('hide');
+  $gate.classList.add('gone');setTimeout(()=>{$gate.hidden=true},1700);start(false)});
+
+// ---------- fairy dust around the title
+const DG=['\u2726','\u2727','\u00b7','*','\u2726','\u00b7'],DC=['#ffffff','#ffe2a6','#ffc4dc','#ff8fbd','#fff6d8'];
+function drawFairy(rdt){const f60r=rdt*60;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  if(performance.now()<wordsDustUntil){const p2=$lead.firstChild;if(p2){const r=p2.getBoundingClientRect();
+    for(let i=0;i<2;i++)dust.push(mkDust(r.left+R()*r.width,r.top+r.height*(0.15+R()*0.8),0))}}
+  if(fairyOn){const el=$hero.firstChild,r=el.getBoundingClientRect(),u=Math.min(1,(performance.now()-fairyT)/2400);
+    const e=u<.5?2*u*u:1-(-2*u+2)**2/2,x0=r.left+r.width*0.1,x1=r.left+r.width*0.92,cxr=r.left+r.width/2,cyr=r.top+r.height*0.55;
+    if(u<1){// the wand: a spinning star with a comet tail of dust
+      const wx=x0+(x1-x0)*e,wy=r.top+r.height*(0.5+Math.sin(u*TAU*3)*0.12);
+      for(let i=0;i<9;i++)dust.push(mkDust(wx+(R()-.5)*16,wy+(R()-.5)*r.height*0.5,1));
+      ctx.globalAlpha=1;ctx.drawImage(glow,wx-55,wy-55,110,110);
+      drawStar(wx,wy,22+Math.sin(performance.now()/60)*4,performance.now()/300,1)}
+    else if(!fairyDone){fairyDone=true;fFlash=1;// the spell lands
+      for(let i=0;i<90;i++){const a=R()*TAU,s=2+R()*7.5;const d=mkDust(cxr+(R()-.5)*r.width*0.6,cyr+(R()-.5)*r.height*0.3,1);d.vx=Math.cos(a)*s;d.vy=Math.sin(a)*s*0.6-1;d.max=1.6+R()*1.6;d.s+=4;dust.push(d)}
+      const [wx2,wy2]=s2w(cxr,cyr);shocks.push({x:wx2,y:wy2,t:now,size:'m'});bloomBoost=Math.max(bloomBoost,.8);shake=Math.max(shake,7);
+      bell(2349.32,.1);bell(2959.96,.07,.06);bell(3520,.05,.12)}
+    if(R()<0.7)dust.push(mkDust(r.left+R()*r.width,r.top+r.height*(0.1+R()*0.8),0));
+    if(fairyDone&&R()<0.09)glints.push({x:r.left+r.width*(0.12+R()*0.76),y:r.top+r.height*(0.3+R()*0.45),t:0,s:0.7+R()*0.6});
+    if(fFlash>0.01){const s=r.width*1.3*(1.2-fFlash*0.4);ctx.globalAlpha=fFlash*0.9;ctx.drawImage(glow,cxr-s/2,cyr-s*0.3,s,s*0.6)}}
+  fFlash*=Math.pow(.93,f60r);
+  glints=glints.filter(g=>g.t<0.7);
+  for(const g of glints){g.t+=rdt;const a=Math.sin(Math.PI*g.t/0.7);ctx.globalAlpha=a*0.9;ctx.drawImage(glow,g.x-20*g.s,g.y-20*g.s,40*g.s,40*g.s);drawStar(g.x,g.y,26*g.s*a,0.3,a)}
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  dust=dust.filter(d=>d.life<d.max);
+  for(const d of dust){d.life+=rdt;if(d.fw){const dr=Math.pow(.95,f60r);d.vx*=dr;d.vy=d.vy*dr+0.006*f60r}else{d.vy+=0.012*f60r;d.vx*=0.985}d.x+=d.vx*f60r;d.y+=d.vy*f60r;
+    const a=Math.sin(Math.PI*d.life/d.max)*(0.55+0.45*Math.sin(d.life*14+d.ph));
+    ctx.globalAlpha=Math.max(0,a);ctx.fillStyle=d.col;ctx.font=`400 ${d.s}px "IBM Plex Mono",sans-serif`;ctx.fillText(d.g,d.x,d.y)}
+  ctx.restore()}
+// a four-point sparkle: two thin crossed beams
+function drawStar(x,y,len,rot,a){ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.globalAlpha=Math.min(1,a);ctx.fillStyle='#ffffff';
+  for(const [w2,l2] of [[len*0.07,len],[len*0.05,len*0.55]]){ctx.beginPath();ctx.moveTo(-l2,0);ctx.quadraticCurveTo(0,-w2,l2,0);ctx.quadraticCurveTo(0,w2,-l2,0);ctx.fill();
+    ctx.beginPath();ctx.moveTo(0,-l2);ctx.quadraticCurveTo(w2,0,0,l2);ctx.quadraticCurveTo(-w2,0,0,-l2);ctx.fill();ctx.rotate(Math.PI/4)}
+  ctx.restore()}
+function mkDust(x,y,trail){return{x,y,vx:(R()-.5)*(trail?1.6:0.5),vy:trail?-(0.4+R()*1.2):-(0.1+R()*0.3),life:0,max:trail?1.2+R()*1.4:0.9+R()*1.1,
+  ph:R()*TAU,g:DG[R()*DG.length|0],col:DC[R()*DC.length|0],s:8+R()*(trail?14:10)}}
+
+// ---------- night sky
+const skyStars=Array.from({length:90},()=>({x:R(),y:Math.pow(R(),1.4)*0.6,s:R()*1.5+.5,ph:R()*TAU,f:.4+R()*1.6}));
+let shoots=[],nextShoot=3;
+const moonC=document.createElement('canvas');moonC.width=moonC.height=160;{const m=moonC.getContext('2d');
+  m.fillStyle='#fff3e6';m.beginPath();m.arc(80,80,26,0,TAU);m.fill();m.globalCompositeOperation='destination-out';m.beginPath();m.arc(92,73,23,0,TAU);m.fill();
+  m.globalCompositeOperation='destination-over';const g=m.createRadialGradient(72,84,6,80,80,80);
+  g.addColorStop(0,'rgba(255,236,220,.32)');g.addColorStop(.45,'rgba(255,210,225,.12)');g.addColorStop(1,'rgba(255,200,220,0)');m.fillStyle=g;m.fillRect(0,0,160,160)}
+let nameStars=null;
+const STAR_TEXT='for you, citraa';
+function buildNameStars(){const lines=W<640?['for you,','citraa']:[STAR_TEXT],bw=W<640?W*0.8:Math.min(W*0.8,980),c=document.createElement('canvas'),x=c.getContext('2d');
+  // render the words at the size they will be shown, then sample every ~3px so the strokes stay dense on any screen
+  let fsz=200;x.font=`${fsz}px "Great Vibes","Snell Roundhand",cursive`;const widest=Math.max(...lines.map(l=>x.measureText(l).width));fsz=Math.max(36,fsz*bw/Math.max(1,widest));
+  const lh2=fsz*1.05;c.width=Math.ceil(bw+fsz*0.6);c.height=Math.ceil(lh2*lines.length+fsz*0.6);x.font=`${fsz}px "Great Vibes","Snell Roundhand",cursive`;x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';
+  lines.forEach((l,i)=>x.fillText(l,c.width/2,fsz*0.3+lh2*(i+0.5)));
+  const cw2=c.width,ch2=c.height,d=x.getImageData(0,0,cw2,ch2).data,pts=[],stp=W<640?2.6:3;
+  for(let y=0,row=0;y<ch2;y+=stp,row++)for(let xx=(row%2)*stp/2;xx<cw2;xx+=stp){const i=((y|0)*cw2+(xx|0))*4+3;if(d[i]>150)pts.push([xx,y])}
+  if(!pts.length)return;let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const [a,b] of pts){x0=Math.min(x0,a);x1=Math.max(x1,a);y0=Math.min(y0,b);y1=Math.max(y1,b)}
+  const st=pts.map(([a,b])=>{const u=(a-x0)/(x1-x0||1);return{u,v:(b-y0)/(y1-y0||1),ang:R()*TAU,rad:0.4+R()*0.9,ph:R()*TAU,delay:u*1.8+R()*0.35,big:R()<0.04}});
+  nameStars={st,t0:performance.now(),aspect:(y1-y0)/(x1-x0||1),bw:x1-x0}}
+// drawn in world space above the bouquet, so it never sits on top of the flowers
+function drawNameStars(){if(!nameStars)return;const age=(performance.now()-nameStars.t0)/1000;
+  const bw=Math.min(nameStars.bw,H*0.4/nameStars.aspect),bh=bw*nameStars.aspect,bx=W/2-bw/2,by=oy-H*0.42-bh/2;
+  ax.save();ax.globalCompositeOperation='lighter';ax.fillStyle='#fff6fa';
+  for(const s of nameStars.st){const e=clamp((age-s.delay)/1.6,0,1);if(!e)continue;const k=1-(1-e)**3;
+    const tx=bx+s.u*bw,ty=by+s.v*bh,sx=tx+Math.cos(s.ang)*W*0.5*s.rad,sy=ty+Math.sin(s.ang)*H*0.4*s.rad;
+    const x=sx+(tx-sx)*k,y=sy+(ty-sy)*k,tw=0.78+0.22*Math.sin(age*2.6+s.ph);
+    ax.globalAlpha=tw*Math.min(1,e*1.6)*artFade;const r=s.big?2.8:1.9;ax.fillRect(x-r/2,y-r/2,r,r);
+    if(s.big&&e>0.5){ax.globalAlpha=tw*0.55*artFade;ax.drawImage(glow,x-10,y-10,20,20)}}
+  const ca=clamp((age-3.4)/1.2,0,1);
+  if(ca){ax.globalCompositeOperation='source-over';ax.globalAlpha=ca*0.85*artFade;ax.fillStyle='#f3d3e1';ax.font=`400 13px "IBM Plex Mono",monospace`;
+    ax.textAlign='center';ax.textBaseline='top';ax.fillText('written in the stars',W/2,by+bh+26)}
+  ax.restore()}
+let rockets=[];
+function launchFireworks(){whoosh(1.2,.14,400,3000);[0,380,760].forEach((ms,i)=>setTimeout(()=>{rockets.push({x:W*(0.25+i*0.25)+(R()-.5)*W*0.08,y:H+10,ty:H*(0.16+R()*0.16),trail:[]})},ms))}
+function updateRockets(rdt){const f=rdt*60;
+  for(const r of rockets){r.y-=(r.y-r.ty)*0.06*f+2*f;r.x+=Math.sin(r.y*0.04)*0.6;r.trail.push(r.x,r.y);if(r.trail.length>30)r.trail.splice(0,2);
+    for(let j=0;j<r.trail.length;j+=2){ctx.globalAlpha=j/r.trail.length*0.8;ctx.fillStyle='#ffe2a6';ctx.fillRect(r.trail[j]-1,r.trail[j+1]-1,2,2)}
+    ctx.globalAlpha=1;ctx.drawImage(glow,r.x-12,r.y-12,24,24);
+    if(r.y-r.ty<6){r.done=true;const k=(0.26+R()*0.06)*Math.min(1.4,Math.max(0.7,W/1000)),cols2=R()<.5?['#ff4f8b','#ffc2da','#ffffff']:['#ffd27a','#ff8fbd','#fff6d8'];
+      for(let i=0;i<84;i++){const t=i/84*TAU,hx=16*Math.sin(t)**3,hy=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)),d=mkDust(r.x,r.y,1);
+        d.vx=hx*k;d.vy=hy*k;d.fw=1;d.max=1.7+R()*0.5;d.g=i%3?'\u2726':'\u2665';d.col=cols2[i%3];d.s=i%3?13:16;dust.push(d)}
+      for(let i=0;i<5;i++){const d=mkDust(r.x,r.y,1);d.vx=d.vy=0;d.fw=1;d.g='\u2665';d.col='#ffffff';d.s=26;d.max=1.2;dust.push(d)}
+      boom(.3);bell(1479.98+R()*600,.06);bloomBoost=Math.max(bloomBoost,.5)}}
+  rockets=rockets.filter(r=>!r.done)}
+function drawStars(T,rdt){ctx.save();const ms=Math.min(W,H)*0.2;ctx.globalAlpha=0.85;ctx.drawImage(moonC,W*0.84-ms/2,H*0.17-ms/2,ms,ms);ctx.fillStyle='#fff6fa';
+  for(const s of skyStars){ctx.globalAlpha=(0.18+0.55*Math.max(0,Math.sin(T*s.f+s.ph)))*(1-form*0.3);ctx.fillRect(s.x*W,s.y*H,s.s,s.s)}
+  if(phase!=='dark'&&T>nextShoot){nextShoot=T+3.5+R()*5;const fl=R()<.5;shoots.push({x:fl?R()*W*.55:W*(.45+R()*.55),y:R()*H*.28,vx:(fl?1:-1)*(10+R()*6),vy:3.5+R()*3,life:0,max:.8+R()*.5})}
+  ctx.globalCompositeOperation='lighter';shoots=shoots.filter(s=>s.life<s.max);
+  for(const s of shoots){s.life+=rdt;s.x+=s.vx*rdt*60;s.y+=s.vy*rdt*60;const a=Math.sin(Math.PI*s.life/s.max),tx=s.x-s.vx*13,ty=s.y-s.vy*13;
+    const g=ctx.createLinearGradient(s.x,s.y,tx,ty);g.addColorStop(0,`rgba(255,244,250,${a})`);g.addColorStop(1,'rgba(255,190,220,0)');
+    ctx.globalAlpha=1;ctx.strokeStyle=g;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.globalAlpha=a;ctx.drawImage(glow,s.x-11,s.y-11,22,22)}
+  ctx.globalCompositeOperation='lighter';updateRockets(rdt);
+  ctx.restore()}
+
+// ---------- tap to send love
+// one tap, one piece of the sentence; it loops back to the start
+const LOVE=["i'm so glad","it's you.","you make","every day","a little softer.","thank you","for being","exactly you.","always."];let lastLove=0,loveIdx=0;
+function loveBurst(x,y){const t=performance.now();if(t-lastLove<420)return;lastLove=t;
+  for(let i=0;i<14;i++){const a=i/14*TAU+R()*.3,sp=2+R()*3,d=mkDust(x,y,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1.5;d.g='\u2665';d.col=R()<.5?'#ff4f8b':'#ffc2da';d.s=12+R()*12;d.max=1.4+R();dust.push(d)}
+  for(let i=0;i<16;i++)dust.push(mkDust(x+(R()-.5)*40,y+(R()-.5)*30,1));
+  const w=document.createElement('div');w.className='loveword';w.setAttribute('aria-hidden','true');w.textContent=LOVE[loveIdx];
+  if(loveIdx===LOVE.length-1){// the sentence is complete: rain hearts and gather the fireflies into a heart again
+    for(let i=0;i<46;i++){const d=mkDust(R()*W,-20-R()*H*0.4,0);d.g='\u2665';d.col=R()<.5?'#ff4f8b':'#ffc2da';d.s=12+R()*16;d.vx=(R()-.5)*0.6;d.vy=1.2+R()*1.8;d.max=3+R()*2;dust.push(d)}
+    gatherOn=true;setTimeout(()=>{gatherOn=false},6500);setTimeout(launchFireworks,700);bloomBoost=Math.max(bloomBoost,.9);[1174.66,1479.98,1760,2349.32].forEach((f,i)=>bell(f,.07,i*0.1))}
+  loveIdx=(loveIdx+1)%LOVE.length;
+  w.style.left=x+'px';w.style.top=y+'px';document.body.appendChild(w);setTimeout(()=>w.remove(),2700);
+  bell(1760,.06);bell(2349.32,.05,.09);bloomBoost=Math.max(bloomBoost,.35)}
+
+// ---------- end controls and the note
+const $again=$('again'),$cta=$('cta'),$letter=$('letter');
+for(const el of [$again,$cta,$letter])el.addEventListener('pointerdown',e=>e.stopPropagation());
+$again.addEventListener('click',()=>{if(phase==='bloom')scatter(W/2,H*0.45)});
+let letterTimers=[];
+function openLetter(){try{const tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase();
+    $('ps').textContent=`p.s. it's ${tm} where you are right now, and i'm thinking of you.`}catch(e){}
+  letterTimers.forEach(clearTimeout);$letter.hidden=false;$letter.classList.remove('unseal','reveal');void $letter.offsetWidth;$letter.classList.add('on');$cta.classList.add('hide');
+  const later=(ms,fn)=>letterTimers.push(setTimeout(fn,ms));
+  later(900,()=>{$letter.classList.add('unseal');pluck(587.33,.14);bell(1479.98,.07);
+    for(let i=0;i<34;i++){const a=R()*TAU,sp=1.5+R()*5,d=mkDust(W/2,H/2+8,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1;dust.push(d)}});
+  later(1800,()=>{$letter.classList.add('reveal');[1174.66,1479.98,1760].forEach((f,i)=>bell(f,.07,i*0.12));$('lclose').focus({preventScroll:true})})}
+function closeLetter(){letterTimers.forEach(clearTimeout);$letter.classList.remove('on','unseal','reveal');setTimeout(()=>{$letter.hidden=true},900);if(phase==='bloom')$cta.classList.remove('hide')}
+$cta.addEventListener('click',openLetter);$('lclose').addEventListener('click',closeLetter);
+$letter.addEventListener('click',e=>{if(e.target===$letter)closeLetter()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$letter.hidden)closeLetter()});
+
+// ---------- title decode
+function scrambleTitle(){$h1.textContent=FOR}
+
+const NAME=(()=>{try{const n=decodeURIComponent(location.hash.slice(1)).replace(/[-_+]+/g,' ').replace(/[^\p{L}\p{M} '.]/gu,'').trim().slice(0,24);return n||''}catch(e){return ''}})();
+const FOR=NAME?'for '+NAME.toLowerCase():'for you';
+{const sp=document.createElement('span');sp.className='w';sp.textContent=FOR;sp.style.fontSize=`min(196px,15vw,${(120/FOR.length).toFixed(1)}vw)`;$hero.appendChild(sp)}
+if(NAME){document.querySelector('.gate .gt').textContent='a little something, just for '+NAME.toLowerCase();$('lh').textContent='dear '+NAME.toLowerCase()+',';$h1.textContent=FOR}
+// ---------- opening heart: every character pinned to its own grid cell, so no font can bend the shape
+const HEART=["      .......         .......", "    .:******##:.   .:##******:.", "  .******#######: :#######******.", " .*****########%%%%%########*****.", " ****######%%%%%%%%%%%%%######****", ":***######%%%%%%%%%%%%%%%######***:", ":***#####%%%%%@@@@@@@%%%%%#####***:", " .*#####%%%%%@@@@@@@@@%%%%%#####*.", "  .:####%%%%%@@@@@@@@@%%%%%####:.", "    :####%%%%%@@@@@@@%%%%%####:", "     .####%%%%%%%%%%%%%%%####.", "      .:###%%%%%%%%%%%%%###:.", "        :#####%%%%%%%#####:", "         .###############.", "          .:###########:.", "            :*********:", "             .*******.", "              .:+++:.", "                :+:", "                 ."];
+function drawGateHeart(){const hc=$('hc');if(!hc)return;const hx=hc.getContext('2d');
+  const cols=Math.max(...HEART.map(l=>l.length)),rows=HEART.length,w=14,h=w*1.8,d=Math.min(devicePixelRatio||1,2)*1.5;
+  hc.width=Math.round(cols*w*d);hc.height=Math.round(rows*h*d);hx.setTransform(d,0,0,d,0,0);
+  hx.font=`700 ${w*1.55}px "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace`;hx.textAlign='center';hx.textBaseline='middle';
+  const COL={'@':'#ffe3ee','%':'#ffa6c6','#':'#ff7fab','*':'#ff5f96','+':'#f2467f','=':'#e33a73',':':'#ff7fab','.':'#ff9cbf'};
+  HEART.forEach((line,r)=>[...line].forEach((ch,c)=>{if(ch===' ')return;hx.fillStyle=COL[ch]||'#ff6f9f';hx.fillText(ch,(c+.5)*w,(r+.5)*h)}))}
+drawGateHeart();
+if(document.fonts&&document.fonts.load)document.fonts.load('700 16px "IBM Plex Mono"').then(drawGateHeart,()=>{});
+// ---------- boot
+addEventListener('resize',()=>{size();if(phase==='bloom')shot(W/2,oy+rows*lh*0.5,1,0,1)});size();
+cam.x=camT.x=W/2;cam.y=camT.y=oy+rows*lh*0.5;
+function staticFrame(){for(const q of cells){q.mode=2;q.px=ox+q.gx*cw;q.py=oy+q.gy*lh}
+  $('gate').hidden=true;$snd.classList.remove('hide');phase='bloom';form=1;beams=1;bakeOK=true;$title.classList.add('on');$hint.textContent='';requestAnimationFrame(frame)}
+const go=()=>reduce?staticFrame():requestAnimationFrame(frame);
+(document.fonts&&document.fonts.load?Promise.race([document.fonts.load('700 16px "IBM Plex Mono"'),new Promise(r=>setTimeout(r,1500))]).catch(()=>{}):Promise.resolve()).then(go,go);
+})();
+</script>
+</body>
+</html>
