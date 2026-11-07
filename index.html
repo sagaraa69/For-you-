@@ -135,6 +135,20 @@ body.cine .bar{height:11vh}
 .card p{margin:0 0 14px;font-size:14px;line-height:1.85;color:#ffe3ee;letter-spacing:.02em;max-width:60ch}
 .card .sign{font-family:var(--fairy);font-size:clamp(28px,4.4vw,34px);line-height:1.2;color:#ffc2da;margin:20px 0 10px;text-align:right;letter-spacing:0}
 .card .ps{font-size:12px;line-height:1.7;color:#d9a9bf;letter-spacing:.03em;margin:0 0 14px}
+.more{display:block;margin:2px auto 14px;background:none;border:0;padding:6px 4px;color:#ffb3cc;font:inherit;font-size:12px;letter-spacing:.06em;
+  text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.more:hover{color:#ffe3ee}
+.more:focus-visible,.nb:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+.pg{animation:pgin .55s ease}
+@keyframes pgin{from{opacity:0;transform:translateY(8px)}}
+.nlist{display:grid;gap:10px;margin:6px 0 16px}
+.nb{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:linear-gradient(160deg,#40112a,#20071a);border:1px solid rgba(255,143,189,.35);
+  border-radius:6px;color:#ffe3ee;font:inherit;padding:12px 16px;cursor:pointer;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.nb:hover{transform:translateY(-2px);border-color:#ff8fbd;box-shadow:0 0 18px rgba(255,79,139,.3)}
+.nb i{font-style:normal;color:#ff6f9f;font-size:20px;line-height:1}
+.nb span{font-family:var(--fairy);font-size:27px;line-height:1.15}
+.card .ow{margin:0;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#d9a9bf}
+#nt{white-space:pre-line}
 .close{display:block;margin:6px auto 0;background:transparent;border:1px solid rgba(255,143,189,.45);color:#ffd0e1;font:inherit;font-size:11px;letter-spacing:.24em;
   text-transform:uppercase;padding:9px 18px 9px 22px;border-radius:999px;cursor:pointer}
 .snd:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
@@ -152,12 +166,30 @@ body.cine .bar{height:11vh}
 <div class="ctls"><button class="again hide" id="again" type="button">bloom again</button><button class="snd hide" id="snd" type="button" aria-pressed="false">sound off</button></div>
 <button class="cta hide" id="cta" type="button">read my note</button>
 <div class="letter" id="letter" hidden><div class="env" aria-hidden="true"><i class="back"></i><i class="flap"></i><i class="front"></i><i class="seal">♥</i></div><div class="card" role="dialog" aria-modal="true" aria-labelledby="lh">
+<div class="pg" id="pmain">
 <h2 id="lh">Dear Citraa,</h2>
 <p>i don't say it as often as i should, but you make my days softer and a little brighter.</p>
 <p>thank you for the laughs, the patience, and all the small moments in between. they mean more to me than you know.</p>
 <p>real tulips fade after a while. these ones will stay right here for you.</p>
 <p class="sign">with love</p>
 <p class="ps" id="ps"></p>
+<button class="more" id="more" type="button">3 more little notes ♡</button>
+</div>
+<div class="pg" id="plist" hidden>
+<h2>open when&hellip;</h2>
+<div class="nlist">
+<button class="nb" type="button" data-n="0"><i>♡</i><span>you miss me</span></button>
+<button class="nb" type="button" data-n="1"><i>♡</i><span>you can't sleep</span></button>
+<button class="nb" type="button" data-n="2"><i>♡</i><span>you need a smile</span></button>
+</div>
+<button class="more goback" type="button" data-to="pmain">back to the letter</button>
+</div>
+<div class="pg" id="pnote" hidden>
+<p class="ow">open when</p>
+<h2 id="nh"></h2>
+<p id="nt"></p>
+<button class="more goback" type="button" data-to="plist">back to the notes</button>
+</div>
 <button class="close" id="lclose" type="button">close</button>
 </div></div>
 <div class="title" id="title"><h1 id="h1">for you</h1><p class="note">every petal is a reason i love you</p><p id="meta">8 tulips</p></div>
@@ -829,7 +861,23 @@ const $again=$('again'),$cta=$('cta'),$letter=$('letter');
 for(const el of [$again,$cta,$letter])el.addEventListener('pointerdown',e=>e.stopPropagation());
 $again.addEventListener('click',()=>{if(phase==='bloom')scatter(W/2,H*0.45)});
 let letterTimers=[];
-function openLetter(){try{const tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase();
+// ---------- "open when" notes
+const OPEN_WHEN=[
+  ['you miss me',"close your eyes for a second.\nthere's a good chance i'm thinking about you right now too.\n\ntalk soon, okay?"],
+  ["you can't sleep","breathe in slowly, and out again.\ncount the stars on this page if you have to.\n\ni hope your dreams are soft tonight. goodnight, citraa."],
+  ['you need a smile',"remember the bunny? it asked me to tell you that you're doing great.\n\nalso: boop. \u2661"]];
+const opened=new Set();
+function showPage(id){for(const p of ['pmain','plist','pnote'])$(p).hidden=p!==id;$letter.querySelector('.card').scrollTop=0;
+  const f=$(id).querySelector('button');if(f)f.focus({preventScroll:true})}
+$('more').addEventListener('click',()=>{showPage('plist');bell(1318.51,.06)});
+$letter.querySelectorAll('.goback').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.to)));
+$letter.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',()=>{const n=+b.dataset.n;
+  $('nh').textContent=OPEN_WHEN[n][0];$('nt').textContent=OPEN_WHEN[n][1];showPage('pnote');
+  opened.add(n);b.querySelector('i').textContent='\u2665';[987.77,1318.51].forEach((f,i)=>bell(f,.06,i*0.1));
+  if(opened.size===3&&!opened.done){opened.done=true;setTimeout(()=>{const r=$letter.querySelector('.card').getBoundingClientRect();
+    for(let i=0;i<40;i++){const a=R()*TAU,sp=1.5+R()*4,d=mkDust(r.left+r.width/2,r.top+40,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1;dust.push(d)}
+    [1174.66,1479.98,1760,2349.32].forEach((f,i)=>bell(f,.06,i*0.09));if($bunny.classList.contains('on'))say('you read them all! \u2661')},400)}}));
+function openLetter(){showPage('pmain');try{const tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase();
     $('ps').textContent=`p.s. it's ${tm} where you are right now, and i'm thinking of you.`}catch(e){}
   letterTimers.forEach(clearTimeout);$letter.hidden=false;$letter.classList.remove('unseal','reveal');void $letter.offsetWidth;$letter.classList.add('on');$cta.classList.add('hide');
   const later=(ms,fn)=>letterTimers.push(setTimeout(fn,ms));
