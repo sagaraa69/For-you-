@@ -53,6 +53,7 @@ body.cine .bar{height:11vh}
 .title{position:fixed;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;
   pointer-events:none;display:flex;flex-direction:column;gap:6px;opacity:0;transform:translateY(10px);transition:opacity 1.6s ease,transform 1.6s ease}
 .title.on{opacity:1;transform:none}
+@media (min-width:561px){.title{max-width:calc(50vw - 110px)}}
 .title h1{margin:0 0 -4px;font-family:var(--fairy);font-weight:400;font-size:clamp(38px,5.4vw,62px);line-height:1.1;letter-spacing:.01em;color:#fff2f7;
   text-shadow:0 0 14px rgba(255,79,139,.75),0 0 36px rgba(255,79,139,.35),0 0 2px #fff}
 .title .note{text-transform:none;letter-spacing:.06em;font-family:var(--mono);font-weight:400;font-style:normal;font-size:13px;color:#ffd0e1;opacity:1;text-shadow:none}
@@ -149,6 +150,11 @@ body.cine .bar{height:11vh}
 .nb span{font-family:var(--fairy);font-size:27px;line-height:1.15}
 .card .ow{margin:0;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#d9a9bf}
 #nt{white-space:pre-line}
+.tw-rest{color:transparent;text-shadow:none}
+.tw-caret{display:inline-block;width:1px;height:1em;margin-left:1px;vertical-align:-0.15em;background:#ff8fbd;animation:caret .8s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+#pmain .more{transition:opacity .6s ease}
+#pmain.typing .more{opacity:0;pointer-events:none}
 .nb.secret{border-color:rgba(255,210,122,.6);background:linear-gradient(160deg,#4a1a2a,#2a0a1c);box-shadow:0 0 22px rgba(255,210,122,.25);animation:pgin .8s ease}
 .nb.secret i{color:#ffd27a}
 #meter{display:block;width:100%;margin:18px 0 10px;accent-color:#ff4f8b;cursor:pointer}
@@ -262,6 +268,7 @@ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const ch=t[y][x];if(ch===' ')cont
   const key=col+'|'+kind;(groups[key]||(groups[key]=[])).push(q);cells.push(q);}
 const petals=cells.filter(q=>q.kind===1);
 $meta.textContent=`8 tulips · ${cells.length.toLocaleString('en-US')} characters`;
+let starTimer=0;const thoughtStars=[];
 const PIV=rows*0.72;
 const bend=gy=>gy<PIV?Math.pow((PIV-gy)/PIV,1.6):0;
 // once the bouquet is whole, cells that move together are baked into one image per unit
@@ -343,7 +350,7 @@ function tween(q,t0,dur,sx,sy,qx,qy,ez,scr){q.mode=1;q.t0=t0;q.dur=dur;q.sx=sx;q
 
 function start(fast){
   bakeOK=false;unbakeAll();
-  $again.classList.add('hide');$cta.classList.add('hide');bunnyOut();
+  $again.classList.add('hide');$cta.classList.add('hide');bunnyOut();clearInterval(starTimer);
   phase='forming';events=[];artFade=1;beatOn=false;form=0;
   document.body.classList.add('cine');$title.classList.remove('on');$hint.classList.remove('on');
   const WS=0.9,WG=3.7,WE=WS+WORDS.length*WG, L=fast?0.9:WE+2.4, STEP=0.86, TW=L+8*STEP+0.25, TR=TW+2.0, TF=TR+2.9;
@@ -412,6 +419,7 @@ function start(fast){
     at(14.2,()=>{skyLook=false;shot(W/2,oy+rows*lh*0.5,1,0,0.022)});
     at(16.5,()=>$cta.classList.remove('hide'));
     at(18,bunnyIn);
+    at(20,()=>{clearInterval(starTimer);starTimer=setInterval(addThoughtStar,15000);addThoughtStar()});
     gust(now+0.2,3.2)});
   at(TF+0.6,()=>shot(W/2,oy+rows*lh*0.5,1.0,0,0.02));
   at(TF+0.1,()=>{beatPeriod=1.5;beatVis=1;beatOn=true});
@@ -429,7 +437,7 @@ const order=seeds.map((s,i)=>i).sort((a,b)=>seeds[a][1]-seeds[b][1]); // back ro
 
 function scatter(x,y){
   if(phase==='scatter'||phase==='dark'||phase==='words')return;
-  $again.classList.add('hide');$cta.classList.add('hide');bunnyOut();
+  $again.classList.add('hide');$cta.classList.add('hide');bunnyOut();clearInterval(starTimer);
   phase='scatter';events=[];bloomBoost=Math.max(bloomBoost,.9);flare=1;setSub('');$title.classList.remove('on');
   const [wx,wy]=s2w(x,y);shocks.push({x:wx,y:wy,t:now,size:'m'});petalBurst(wx,wy,70);shake=14;chroma=.6;gatherOn=false;$hero.classList.remove('on','out');boom(.5);whoosh(1,.2,3000,300);
   bakeOK=false;unbakeAll();
@@ -544,7 +552,7 @@ function frame(ms){
   // ---- composite
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(dpr,0,0,dpr,0,0);
   const [shx,shy]=w2s(heartX,heartY);
-  drawSky();drawStars(T,rdt);drawSpot(T);if(Q>0){drawBeams(T);drawRays(T,shx,shy);drawField(T)}
+  drawSky();drawBokeh(T);drawStars(T,rdt);drawSpot(T);if(Q>0){drawBeams(T);drawRays(T,shx,shy);drawField(T)}
   ctx.setTransform(1,0,0,1,0,0);
   g1x.clearRect(0,0,g1.width,g1.height);g1x.drawImage(art,0,0,g1.width,g1.height);
   g2x.clearRect(0,0,g2.width,g2.height);g2x.drawImage(g1,0,0,g2.width,g2.height);
@@ -860,7 +868,7 @@ function drawStars(T,rdt){ctx.save();const ms=Math.min(W,H)*0.2;ctx.globalAlpha=
     ctx.globalAlpha=1;ctx.strokeStyle=g;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.globalAlpha=a;ctx.drawImage(glow,s.x-11,s.y-11,22,22);
     if(s.wish){if(s.wx===undefined){s.wx=s.x;s.wy=s.y+26}ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=Math.min(1,s.life*3)*Math.max(0,1-(s.life-s.max)/1.6)*0.85;
       ctx.fillStyle='#ffe3ee';ctx.font=`24px "Great Vibes",cursive`;ctx.textAlign='center';ctx.fillText('make a wish',s.wx,s.wy);ctx.restore()}}
-  ctx.globalCompositeOperation='lighter';updateRockets(rdt);
+  ctx.globalCompositeOperation='lighter';drawThoughtStars();updateRockets(rdt);
   ctx.restore()}
 
 // ---------- tap to send love
@@ -909,13 +917,28 @@ $letter.querySelectorAll('.nb').forEach(b=>b.addEventListener('click',()=>{const
     for(let i=0;i<40;i++){const a=R()*TAU,sp=1.5+R()*4,d=mkDust(r.left+r.width/2,r.top+40,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1;dust.push(d)}
     [1174.66,1479.98,1760,2349.32].forEach((f,i)=>bell(f,.06,i*0.09));if($bunny.classList.contains('on'))say('you read them all! \u2661')},400)}}));
 function openLetter(){showPage('pmain');try{const tm=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).toLowerCase();
-    $('ps').textContent=`p.s. it's ${tm} where you are right now, and i'm thinking of you.`}catch(e){}
+    const ps=$('ps');ps.textContent=`p.s. it's ${tm} where you are right now, and i'm thinking of you.`;ps.dataset.full=ps.textContent}catch(e){}
   letterTimers.forEach(clearTimeout);$letter.hidden=false;$letter.classList.remove('unseal','reveal');void $letter.offsetWidth;$letter.classList.add('on');$cta.classList.add('hide');
   const later=(ms,fn)=>letterTimers.push(setTimeout(fn,ms));
   later(900,()=>{$letter.classList.add('unseal');pluck(587.33,.14);bell(1479.98,.07);
     for(let i=0;i<34;i++){const a=R()*TAU,sp=1.5+R()*5,d=mkDust(W/2,H/2+8,1);d.vx=Math.cos(a)*sp;d.vy=Math.sin(a)*sp-1;dust.push(d)}});
-  later(1800,()=>{$letter.classList.add('reveal');[1174.66,1479.98,1760].forEach((f,i)=>bell(f,.07,i*0.12));$('lclose').focus({preventScroll:true})})}
-function closeLetter(){letterTimers.forEach(clearTimeout);$letter.classList.remove('on','unseal','reveal');setTimeout(()=>{$letter.hidden=true},900);if(phase==='bloom')$cta.classList.remove('hide')}
+  prepTyping();
+  later(1800,()=>{$letter.classList.add('reveal');[1174.66,1479.98,1760].forEach((f,i)=>bell(f,.07,i*0.12));$('lclose').focus({preventScroll:true})});
+  later(2500,startTyping)}
+// the letter types itself out; the hidden rest of each line keeps the card from changing size
+let twEls=[],twTimer=0,twOn=false;
+function prepTyping(){clearTimeout(twTimer);twOn=false;const pm=$('pmain');twEls=[...pm.querySelectorAll('p')];
+  for(const p of twEls){if(p.dataset.full===undefined)p.dataset.full=p.textContent;p.innerHTML='';const a=document.createElement('span'),b=document.createElement('span');b.className='tw-rest';b.textContent=p.dataset.full;p.append(a,b)}
+  pm.classList.add('typing')}
+function startTyping(){twOn=true;let i=0,j=0;const caret=document.createElement('span');caret.className='tw-caret';
+  const step=()=>{if(!twOn)return;while(i<twEls.length&&j>=twEls[i].dataset.full.length){i++;j=0}
+    if(i>=twEls.length){caret.remove();$('pmain').classList.remove('typing');twOn=false;return}
+    const p=twEls[i],full=p.dataset.full;j++;p.firstChild.textContent=full.slice(0,j);p.lastChild.textContent=full.slice(j);p.insertBefore(caret,p.lastChild);
+    const ch=full[j-1],sign=p.classList.contains('sign');twTimer=setTimeout(step,sign?70:ch==='.'||ch===','?140:j===full.length?380:20)};step()}
+function finishTyping(){if(!twOn&&!$('pmain').classList.contains('typing'))return;twOn=false;clearTimeout(twTimer);
+  for(const p of twEls){p.textContent=p.dataset.full}$('pmain').classList.remove('typing')}
+$letter.querySelector('.card').addEventListener('click',e=>{if(e.target.closest('button'))return;finishTyping()});
+function closeLetter(){letterTimers.forEach(clearTimeout);finishTyping();$letter.classList.remove('on','unseal','reveal');setTimeout(()=>{$letter.hidden=true},900);if(phase==='bloom')$cta.classList.remove('hide')}
 $cta.addEventListener('click',openLetter);$('lclose').addEventListener('click',closeLetter);
 $letter.addEventListener('click',e=>{if(e.target===$letter)closeLetter()});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$letter.hidden)closeLetter()});
@@ -937,6 +960,26 @@ $bunny.addEventListener('click',e=>{e.stopPropagation();$bunny.classList.remove(
   bunnyFace('>.<');setTimeout(()=>bunnyFace('^.^'),500);say(BUNNY_LINES[bunnyIdx]);bunnyIdx=(bunnyIdx+1)%BUNNY_LINES.length;
   const r=$bunny.getBoundingClientRect();for(let i=0;i<8;i++){const d=mkDust(r.left+r.width/2,r.top+10,1);d.g='\u2665';d.col=R()<.5?'#ff4f8b':'#ffc2da';d.s=11+R()*8;d.vy=-(1.5+R()*2);d.vx=(R()-.5)*3;dust.push(d)}
   pluck(880,.1);pluck(1318.51,.07,.08)});
+
+// ---------- heart bokeh and thought stars
+const bokehC=document.createElement('canvas');bokehC.width=bokehC.height=128;{const b=bokehC.getContext('2d');b.translate(64,66);b.scale(2.6,2.6);
+  b.beginPath();for(let i=0;i<=60;i++){const t=i/60*TAU,x=16*Math.sin(t)**3,y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));i?b.lineTo(x,y):b.moveTo(x,y)}b.closePath();
+  const g=b.createRadialGradient(0,-2,2,0,-2,20);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(1,'rgba(255,255,255,.35)');b.fillStyle=g;b.fill()}
+const bokeh=Array.from({length:16},()=>({x:R(),y:R(),s:50+R()*120,vx:(R()-.5)*0.004,vy:-(0.002+R()*0.006),ph:R()*TAU,col:R()<.65?'255,111,159':'255,210,122',rot:(R()-.5)*0.5}));
+const tintB={};function bokehTint(rgb){if(tintB[rgb])return tintB[rgb];const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  x.drawImage(bokehC,0,0);x.globalCompositeOperation='source-in';x.fillStyle=`rgb(${rgb})`;x.fillRect(0,0,128,128);return tintB[rgb]=c}
+function drawBokeh(T){if(form<0.05)return;ctx.save();ctx.globalCompositeOperation='lighter';const n=Q===2?16:Q===1?10:6;
+  for(let i=0;i<n;i++){const b=bokeh[i];b.x+=b.vx/60;b.y+=b.vy/60;if(b.y<-0.15){b.y=1.1;b.x=R()}if(b.x<-0.1)b.x=1.1;if(b.x>1.1)b.x=-0.1;
+    const a=(0.05+0.035*Math.sin(T*0.6+b.ph)+intensity*0.04)*form*artFade;ctx.globalAlpha=Math.max(0,a);
+    ctx.save();ctx.translate(b.x*W,b.y*H);ctx.rotate(b.rot+Math.sin(T*0.3+b.ph)*0.1);ctx.drawImage(bokehTint(b.col),-b.s/2,-b.s/2,b.s,b.s);ctx.restore()}
+  ctx.restore()}
+function addThoughtStar(){if(phase!=='bloom')return;let x,y,k=0;do{x=0.05+R()*0.9;y=0.04+R()*0.3;k++}while(k<20&&Math.hypot(x-0.84,y-0.17)<0.12);
+  thoughtStars.push({x,y,born:performance.now(),ph:R()*TAU});const n=thoughtStars.length;
+  $meta.textContent=`8 tulips · ${n} ${n===1?'star':'stars'}, one for each time i thought of you`;bell(2349.32,.035)}
+function drawThoughtStars(){const now2=performance.now();for(const s of thoughtStars){const age=(now2-s.born)/1000,x=s.x*W,y=s.y*H;
+  const pop=Math.max(0,1-age/1.2),tw=0.75+0.25*Math.sin(age*2+s.ph);
+  ctx.globalAlpha=tw;ctx.drawImage(glow,x-13-pop*30,y-13-pop*30,26+pop*60,26+pop*60);ctx.globalAlpha=Math.min(1,tw+pop);ctx.fillStyle='#ffffff';ctx.fillRect(x-1.3,y-1.3,2.6,2.6);
+  if(pop>0){ctx.globalAlpha=pop;ctx.strokeStyle='#fff0f6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-22*pop-4,y);ctx.lineTo(x+22*pop+4,y);ctx.moveTo(x,y-22*pop-4);ctx.lineTo(x,y+22*pop+4);ctx.stroke()}}}
 
 // ---------- title decode
 function scrambleTitle(){$h1.textContent=FOR}
